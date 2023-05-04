@@ -8,6 +8,6 @@ public class RegisterRequest
     public string Surname { get; set; }
     public string Email { get; set; }
     public string Phone { get; set; }
-    public DateTime DateOfBirth { get; set; }
+    public DateTime BirthDate { get; set; }
     public string IP { get; set; }
 }

@@ -22,6 +22,7 @@ public class UserController : ControllerBase
     [HttpPost("register")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Response>> Register([FromBody] RegisterRequest request)
     {
         var response = new Response();
@@ -88,7 +89,7 @@ public class UserController : ControllerBase
             var user = new User
             {
                 Login = login, Name = request.Name, Surname = request.Surname, Email = email, Phone = phone,
-                DateOfBirth = request.DateOfBirth
+                BirthDate = request.BirthDate
             };
 
             if (await _userService.LoginExists(login))
@@ -115,13 +116,14 @@ public class UserController : ControllerBase
         catch (Exception e)
         {
             response.Error = "Something went wrong. Please try again later. We are sorry";
-            return BadRequest(response);
+            return StatusCode(StatusCodes.Status500InternalServerError, response);
         }
     }
 
     [HttpPost("login")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Response>> Login([FromBody] LoginRequest request)
     {
         var response = new Response();
@@ -154,7 +156,41 @@ public class UserController : ControllerBase
         catch (Exception e)
         {
             response.Error = "Something went wrong. Please try again later. We are sorry";
-            return BadRequest(response);
+            return StatusCode(StatusCodes.Status500InternalServerError, response);
+        }
+    }
+    
+    [HttpPost("profile/edit")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<Response>> EditProfile([FromBody] EditProfileRequest request)
+    {
+        var response = new Response();
+        try
+        {
+            if (request.Description.Length > 255)
+            {
+                response.Error = "Description length can't be over 255 symbols";
+                return BadRequest(response);
+            }
+
+            var id = _userService.GetIdFromToken(Request.Headers["token"]);
+            await _userService.EditProfile(id, request);
+            var user = await _userService.GetProfileById(id);
+            var dataEntry = new DataEntry<User>()
+            {
+                Data = user,
+                Type = "user"
+            };
+            response.Data = new[] { dataEntry };
+
+            return Ok(response);
+        }
+        catch (Exception e)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return StatusCode(StatusCodes.Status500InternalServerError, response);
         }
     }
 }

@@ -21,7 +21,7 @@ public class User
     [JsonProperty("phone")]
     public string Phone { get; set; } = string.Empty;
     [JsonProperty("dateOfBirth")]
-    public DateTime DateOfBirth { get; set; }
+    public DateTime BirthDate { get; set; }
     [JsonProperty("lastLoginTimeStamp")]
     public DateTime LastLoginTimeStamp { get; set; }
     [JsonProperty("ip")]
