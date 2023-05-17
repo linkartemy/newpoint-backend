@@ -45,7 +45,8 @@ public class CodeController : ControllerBase
                 return BadRequest(response);
             }
             
-            var id = _userService.GetIdFromToken(Request.Headers["token"]);
+            //var id = _userService.GetIdFromToken(Request.Headers["token"]);
+            var id = 1;
             await _codeService.SendCodeToEmail(id, email);
             var user = await _userService.GetProfileById(id);
             var dataEntry = new DataEntry<User>
