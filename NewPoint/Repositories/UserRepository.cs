@@ -1,6 +1,7 @@
 using Dapper;
 using NewPoint.Handlers;
 using NewPoint.Models;
+using NewPoint.Models.Requests;
 
 namespace NewPoint.Repositories;
 
@@ -64,5 +65,31 @@ internal class UserRepository : IUserRepository
             new { login });
 
         return hashedPassword;
+    }
+    
+    public async Task EditProfile(int id, EditProfileRequest user)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET name=@name,
+            surname=@surname,
+            description=@description,
+            birthdate=@birthdate,
+            location=@location
+        WHERE id=@id;
+        ",
+            new {id=id, name=user.Name, surname=user.Surname, description=user.Description,birthdate=user.BirthDate,location=user.Location });
+    }
+    
+    public async Task<User> GetProfileById(int id)
+    {
+        var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
+        SELECT * FROM
+            ""user""
+        WHERE id=@id;
+        ",
+            new {id=id});
+        return user;
     }
 }

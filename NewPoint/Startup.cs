@@ -43,6 +43,8 @@ public class Startup
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IPostService, PostService>();
         services.AddSingleton<IPostRepository, PostRepository>();
+        services.AddSingleton<ICodeService, CodeService>();
+        services.AddSingleton<ICodeRepository, CodeRepository>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>
@@ -85,6 +87,8 @@ public class Startup
         DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
 
         services.Configure<JwtConfiguration>(Configuration.GetSection(nameof(JwtConfiguration)));
+        
+        services.Configure<SMTPConfiguration>(Configuration.GetSection(nameof(SMTPConfiguration)));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
