@@ -1,7 +1,5 @@
 ﻿using FluentMigrator;
 
-namespace DatabaseMigrations.Migrations;
-
 [Migration(2023_05_14_16_40, "Create Post table")]
 public class CreatePostTable : Migration {
     public const string PostTable = @"""post""";
@@ -15,11 +13,11 @@ public class CreatePostTable : Migration {
     {
         Execute.Sql($@"
         CREATE TABLE {PostTable} (
-            {Id} SERIAL PRIMARY KEY,
+            {Id} BIGSERIAL PRIMARY KEY,
             {AuthorId} BIGINT NOT NULL,
             {Content} TEXT NOT NULL,
-            {Images} HSTORE NOT NULL,
-            {CreationTimeStamp} TIMESTAMPTZ NOT NULL,
+            {Images} JSONB,
+            {CreationTimeStamp} TIMESTAMPTZ NOT NULL
         );
 
         CREATE INDEX {Id}_index ON {PostTable}({Id});
