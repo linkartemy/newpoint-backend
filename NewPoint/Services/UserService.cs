@@ -38,21 +38,21 @@ public class UserService : IUserService
             .Success;
     }
 
-    public Task InsertUser(User user)
-        => _userRepository.InsertUser(user);
+    public async Task InsertUser(User user)
+        => await _userRepository.InsertUser(user);
     
-    public Task<User> GetUserByLogin(string login)
-        => _userRepository.GetUserByLogin(login);
+    public async Task<User> GetUserByLogin(string login)
+        => await _userRepository.GetUserByLogin(login);
     
-    public Task<string> GetUserHashedPassword(string login)
-        => _userRepository.GetUserHashedPassword(login);
-    
+    public async Task<string> GetUserHashedPassword(string login)
+        => await _userRepository.GetUserHashedPassword(login);
+
     public async Task EditProfile(int id, EditProfileRequest profile)
         => await _userRepository.EditProfile(id, profile);   
 
     public async Task<User> GetProfileById(int id)
         => await _userRepository.GetProfileById(id);
-
+    
     public string CreateToken(User user)
     {
         List<Claim> claims = new List<Claim> {

@@ -33,7 +33,7 @@ internal class UserRepository : IUserRepository
                 surname = user.Surname,
                 email = user.Email,
                 phone = user.Phone,
-                dateOfBirth = user.DateOfBirth,
+                dateOfBirth = user.BirthDate,
                 lastLoginTimestamp = user.LastLoginTimeStamp,
                 ip = user.IP,
                 token = user.Token
@@ -66,7 +66,7 @@ internal class UserRepository : IUserRepository
 
         return hashedPassword;
     }
-    
+
     public async Task EditProfile(int id, EditProfileRequest user)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@"
