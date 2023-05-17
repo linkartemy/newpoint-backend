@@ -55,8 +55,8 @@ public class UserService : IUserService
     
     public string CreateToken(User user)
     {
-        List<Claim> claims = new List<Claim> {
-            new Claim(ClaimTypes.UserData, user.Id.ToString())
+        var claims = new List<Claim> {
+            new(ClaimTypes.UserData, user.Id.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfiguration.Value.Token));

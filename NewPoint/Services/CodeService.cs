@@ -8,25 +8,27 @@ namespace NewPoint.Services;
 
 public class CodeService : ICodeService
 {
-    private readonly ICodeRepository _codeRepository;
-    private IOptions<SMTPConfiguration> _SMTPConfiguration;
+    private ICodeRepository _codeRepository;
+    private IOptions<SMTPConfiguration> _smtpConfiguration;
 
-    public CodeService(ICodeRepository codeRepository)
+    public CodeService(ICodeRepository codeRepository, IOptions<SMTPConfiguration> smtpConfiguration)
     {
         _codeRepository = codeRepository;
+        _smtpConfiguration = smtpConfiguration;
     }
     
     public async Task SendCodeToEmail(int userId, string email)
     {
         var code = GenerateCode();
-        await _codeRepository.AddEmailCode(userId, email, code);
+       await _codeRepository.AddEmailCode(userId, email, code);
         
-        var message = new MailMessage(_SMTPConfiguration.Value.Email, email);
+        var message = new MailMessage(_smtpConfiguration.Value.Email, email);
         message.Subject = "Email verification code (NewPoint)";
         message.Body = @$"Code: {code}";
-        var client = new SmtpClient(_SMTPConfiguration.Value.Server)
+        var client = new SmtpClient(_smtpConfiguration.Value.Server, _smtpConfiguration.Value.Port)
         {
-            Credentials = new NetworkCredential(_SMTPConfiguration.Value.Email, _SMTPConfiguration.Value.Password),
+            Credentials = new NetworkCredential(_smtpConfiguration.Value.Email, _smtpConfiguration.Value.Password),
+            EnableSsl = true
         };
         client.Send(message);
     }

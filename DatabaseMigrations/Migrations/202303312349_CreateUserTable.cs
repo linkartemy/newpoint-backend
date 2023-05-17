@@ -33,7 +33,7 @@ public class CreateUserTable : Migration
             {DateOfBirth} DATE,
             {LastLoginTimeStamp} TIMESTAMP,
             {IP} VARCHAR(255),
-            {Token} VARCHAR(255),
+            {Token} VARCHAR(1023),
             {RegistrationTimeStamp} TIMESTAMP NOT NULL
         );
 
