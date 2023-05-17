@@ -5,7 +5,7 @@ namespace NewPoint.Models;
 public class User
 {
     [JsonProperty("id")]
-    public ulong Id { get; set; }
+    public long Id { get; set; }
     [JsonProperty("login")]
     public string Login { get; set; } = string.Empty;
     [JsonIgnore]

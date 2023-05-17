@@ -22,7 +22,7 @@ public class CreateUserTable : Migration
     {
         Execute.Sql($@"
         CREATE TABLE {UserTable} (
-            {Id} SERIAL PRIMARY KEY,
+            {Id} BIGSERIAL PRIMARY KEY,
             {Login} VARCHAR(255) NOT NULL UNIQUE,
             {PasswordHash} TEXT NOT NULL,
             {Name} VARCHAR(255) NOT NULL,

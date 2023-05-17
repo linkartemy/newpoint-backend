@@ -41,6 +41,8 @@ public class Startup
 
         services.AddSingleton<IUserService, UserService>();
         services.AddSingleton<IUserRepository, UserRepository>();
+        services.AddSingleton<IPostService, PostService>();
+        services.AddSingleton<IPostRepository, PostRepository>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>
