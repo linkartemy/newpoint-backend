@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NewPoint.Configurations;
 using NewPoint.Models;
+using NewPoint.Models.Requests;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
@@ -37,15 +38,21 @@ public class UserService : IUserService
             .Success;
     }
 
-    public Task InsertUser(User user)
-        => _userRepository.InsertUser(user);
+    public async Task InsertUser(User user)
+        => await _userRepository.InsertUser(user);
     
-    public Task<User> GetUserByLogin(string login)
-        => _userRepository.GetUserByLogin(login);
+    public async Task<User> GetUserByLogin(string login)
+        => await _userRepository.GetUserByLogin(login);
     
-    public Task<string> GetUserHashedPassword(string login)
-        => _userRepository.GetUserHashedPassword(login);
+    public async Task<string> GetUserHashedPassword(string login)
+        => await _userRepository.GetUserHashedPassword(login);
 
+    public async Task EditProfile(int id, EditProfileRequest profile)
+        => await _userRepository.EditProfile(id, profile);   
+
+    public async Task<User> GetProfileById(int id)
+        => await _userRepository.GetProfileById(id);
+    
     public string CreateToken(User user)
     {
         List<Claim> claims = new List<Claim> {
@@ -61,5 +68,12 @@ public class UserService : IUserService
 
         var handler = new JwtSecurityTokenHandler().WriteToken(token);
         return handler;
+    }
+    
+    public int GetIdFromToken(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var jwtSecurityToken = handler.ReadJwtToken(token);
+        return int.Parse(jwtSecurityToken.Claims.First(claim => claim.Type == ClaimTypes.UserData).Value);
     }
 }
