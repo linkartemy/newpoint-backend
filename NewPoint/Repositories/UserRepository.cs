@@ -22,7 +22,7 @@ internal class UserRepository : IUserRepository
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
         INSERT INTO ""user"" (login, password_hash, name, surname, email, phone, date_of_birth, last_login_timestamp, ip, token, registration_timestamp)
-        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, @token, now())
+        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, now())
         RETURNING id;
         ",
             new
@@ -36,7 +36,6 @@ internal class UserRepository : IUserRepository
                 dateOfBirth = user.BirthDate,
                 lastLoginTimestamp = user.LastLoginTimeStamp,
                 ip = user.IP,
-                token = user.Token
             });
         user.Id = id;
     }
@@ -50,6 +49,19 @@ internal class UserRepository : IUserRepository
         WHERE login=@login;
         ",
             new { login });
+
+        return user;
+    }
+    
+    public async Task<User> GetPostUserDataById(long id)
+    {
+        var user = DatabaseHandler.Connection.QueryFirst<User>(@"
+        SELECT
+            login, name, surname
+        FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
 
         return user;
     }

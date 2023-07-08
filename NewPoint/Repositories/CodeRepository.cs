@@ -1,6 +1,4 @@
 ﻿using System.Timers;
-using Dapper;
-using NewPoint.Handlers;
 using NewPoint.Models;
 using Timer = System.Timers.Timer;
 
@@ -39,9 +37,6 @@ public class CodeRepository : ICodeRepository
         if (index != -1)
         {
             _codes.RemoveAt(index);
-            Console.WriteLine(index);
         }
-
-        Console.WriteLine(index);
     }
 }

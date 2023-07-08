@@ -5,7 +5,7 @@ namespace NewPoint.Services;
 
 public class PostService : IPostService
 {
-    private IPostRepository _postRepository;
+    private readonly IPostRepository _postRepository;
 
     public PostService(IPostRepository postRepository)
     {
@@ -13,7 +13,5 @@ public class PostService : IPostService
     }
     
     public async Task<List<Post>> GetPosts()
-    {
-        return await _postRepository.GetPosts();
-    }
+        => (await _postRepository.GetPosts()).ToList();
 }

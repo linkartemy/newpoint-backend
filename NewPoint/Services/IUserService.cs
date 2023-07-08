@@ -10,6 +10,7 @@ public interface IUserService
     bool VerifyPassword(User user, string password);
     Task InsertUser(User user);
     Task<User> GetUserByLogin(string login);
+    Task<User> GetPostUserDataById(long id);
     public Task<User> GetProfileById(int id);
     Task<string> GetUserHashedPassword(string login);
     Task EditProfile(int id, EditProfileRequest user);
