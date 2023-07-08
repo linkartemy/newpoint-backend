@@ -11,11 +11,13 @@ namespace NewPoint.Controllers;
 public class PostController : ControllerBase
 {
     private readonly IPostService _postService;
+    private readonly IUserService _userService;
     private readonly ILogger<PostController> _logger;
 
-    public PostController(IPostService postService, ILogger<PostController> logger)
+    public PostController(IPostService postService, IUserService userService, ILogger<PostController> logger)
     {
         _postService = postService;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -29,14 +31,21 @@ public class PostController : ControllerBase
         try
         {
             var posts = await _postService.GetPosts();
+            
+            foreach (var post in posts)
+            {
+                var user = await _userService.GetPostUserDataById(post.AuthorId);
+                post.Login = user.Login;
+                post.Name = user.Name;
+                post.Surname = user.Surname;
+            }
 
-            var dataEntry = new DataEntry<List<Post>>()
+            var dataEntry = new DataEntry<List<Post>>
             {
                 Data = posts,
                 Type = "posts"
             };
             response.Data = new[] { dataEntry };
-
             return Ok(response);
         }
         catch (Exception)

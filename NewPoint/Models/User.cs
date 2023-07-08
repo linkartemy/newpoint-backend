@@ -26,8 +26,6 @@ public class User
     public DateTime LastLoginTimeStamp { get; set; }
     [JsonProperty("ip")]
     public string IP { get; set; } = string.Empty;
-    [JsonProperty("token")]
-    public string Token { get; set; } = string.Empty;
     [JsonProperty("registrationTimeStamp")]
     public DateTime RegistrationTimeStamp { get; set; }
 }

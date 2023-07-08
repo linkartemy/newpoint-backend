@@ -101,13 +101,9 @@ public class UserController : ControllerBase
 
             _userService.AssignPasswordHash(user, password);
 
-            var token = _userService.CreateToken(user);
-
-            user.Token = token;
-
             await _userService.InsertUser(user);
 
-            Response.Headers.Add("token", token);
+            Response.Headers.Add("Authorization", _userService.CreateToken(user));
 
             var dataEntry = new DataEntry<User>()
             {
@@ -145,9 +141,8 @@ public class UserController : ControllerBase
                 response.Error = "Wrong login or password.";
                 return BadRequest(response);
             }
-            
 
-            Response.Headers.Add("token", _userService.CreateToken(user));
+            Response.Headers.Add("Authorization", _userService.CreateToken(user));
 
             var dataEntry = new DataEntry<User>()
             {

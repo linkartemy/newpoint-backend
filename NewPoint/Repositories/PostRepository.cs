@@ -6,12 +6,17 @@ namespace NewPoint.Repositories;
 
 public class PostRepository : IPostRepository
 {
-    public async Task<List<Post>> GetPosts()
+    public async Task<IEnumerable<Post>> GetPosts()
     {
-        var reader = await DatabaseHandler.Connection.QueryMultipleAsync(@"
-        SELECT * FROM ""post"";
+        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
+        SELECT 
+            id AS id,
+            author_id AS AuthorId,
+            content AS Content,
+            images AS Images,
+            creation_timestamp as CreationTimestamp
+        FROM ""post"";
         ");
-        var posts = await reader.ReadAsync<Post>();
-        return posts.ToList();
+        return reader;
     }
 }

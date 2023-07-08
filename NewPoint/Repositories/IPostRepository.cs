@@ -4,5 +4,5 @@ namespace NewPoint.Repositories;
 
 public interface IPostRepository
 {
-    Task<List<Post>> GetPosts();
+    Task<IEnumerable<Post>> GetPosts();
 }

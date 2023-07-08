@@ -8,10 +8,16 @@ public class Post
     public long Id { get; set; }
     [JsonProperty("author_id")]
     public long AuthorId { get; set; }
+    [JsonProperty("login")]
+    public string Login { get; set; }
+    [JsonProperty("name")]
+    public string Name { get; set; }
+    [JsonProperty("surname")]
+    public string Surname { get; set; }
     [JsonProperty("content")]
     public string Content { get; set; }
     [JsonProperty("images")]
     public string Images { get; set; }
     [JsonProperty("creation_timestamp")]
-    public DateTime CreationTimeStamp { get; set; }
+    public DateTime CreationTimestamp { get; set; }
 }
