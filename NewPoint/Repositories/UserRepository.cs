@@ -18,11 +18,11 @@ internal class UserRepository : IUserRepository
         return counter != 0;
     }
 
-    public async Task InsertUser(User user)
+    public async Task InsertUser(User user, string token)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
         INSERT INTO ""user"" (login, password_hash, name, surname, email, phone, date_of_birth, last_login_timestamp, ip, token, registration_timestamp)
-        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, now())
+        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, @token, now())
         RETURNING id;
         ",
             new
@@ -36,6 +36,7 @@ internal class UserRepository : IUserRepository
                 dateOfBirth = user.BirthDate,
                 lastLoginTimestamp = user.LastLoginTimeStamp,
                 ip = user.IP,
+                token
             });
         user.Id = id;
     }

@@ -8,7 +8,7 @@ public interface IUserService
     Task<bool> LoginExists(string login);
     void AssignPasswordHash(User user, string password);
     bool VerifyPassword(User user, string password);
-    Task InsertUser(User user);
+    Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);
     Task<User> GetPostUserDataById(long id);
     public Task<User> GetProfileById(int id);

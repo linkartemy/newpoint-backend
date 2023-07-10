@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewPoint.Models;
 using NewPoint.Models.Requests;
@@ -23,6 +24,7 @@ public class CodeController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize]
     [HttpPost("create/email")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

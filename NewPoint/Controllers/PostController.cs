@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewPoint.Models;
 using NewPoint.Models.Requests;
@@ -20,7 +21,8 @@ public class PostController : ControllerBase
         _userService = userService;
         _logger = logger;
     }
-
+    
+    [Authorize]
     [HttpPost("get")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

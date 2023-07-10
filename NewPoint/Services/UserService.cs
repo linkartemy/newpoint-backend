@@ -38,8 +38,8 @@ public class UserService : IUserService
             .Success;
     }
 
-    public async Task InsertUser(User user)
-        => await _userRepository.InsertUser(user);
+    public async Task InsertUser(User user, string token)
+        => await _userRepository.InsertUser(user, token);
     
     public async Task<User> GetUserByLogin(string login)
         => await _userRepository.GetUserByLogin(login);

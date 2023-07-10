@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewPoint.Models;
 using NewPoint.Models.Requests;
@@ -87,10 +88,16 @@ public class UserController : ControllerBase
                 return BadRequest(response);
             }
 
+            if (DateTime.TryParse(request.BirthDate, out var date) is false)
+            {
+                date = DateTime.Today;
+            }
+
             var user = new User
             {
                 Login = login, Name = request.Name, Surname = request.Surname, Email = email, Phone = phone,
-                BirthDate = request.BirthDate
+                BirthDate = date, IP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                LastLoginTimeStamp = DateTime.Now
             };
 
             if (await _userService.LoginExists(login))
@@ -101,9 +108,11 @@ public class UserController : ControllerBase
 
             _userService.AssignPasswordHash(user, password);
 
-            await _userService.InsertUser(user);
+            var token = _userService.CreateToken(user);
 
-            Response.Headers.Add("Authorization", _userService.CreateToken(user));
+            await _userService.InsertUser(user, token);
+
+            Response.Headers.Add("Authorization", token);
 
             var dataEntry = new DataEntry<User>()
             {
@@ -135,7 +144,7 @@ public class UserController : ControllerBase
 
             var user = await _userService.GetUserByLogin(login);
             user.HashedPassword = await _userService.GetUserHashedPassword(user.Login);
-            
+
             if (await _userService.LoginExists(login) is false || _userService.VerifyPassword(user, password) is false)
             {
                 response.Error = "Wrong login or password.";
@@ -159,7 +168,8 @@ public class UserController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, response);
         }
     }
-    
+
+    [Authorize]
     [HttpPost("profile/edit")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
