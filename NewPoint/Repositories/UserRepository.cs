@@ -43,7 +43,7 @@ internal class UserRepository : IUserRepository
     
     public async Task<User> GetUserByLogin(string login)
     {
-        var user = DatabaseHandler.Connection.QueryFirst<User>(@"
+        var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
         SELECT
             *
         FROM ""user""
@@ -54,9 +54,35 @@ internal class UserRepository : IUserRepository
         return user;
     }
     
-    public async Task<User> GetPostUserDataById(long id)
+    public async Task<string> GetTokenById(long id)
     {
-        var user = DatabaseHandler.Connection.QueryFirst<User>(@"
+        var token = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
+        SELECT
+            token
+        FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return token;
+    }
+    
+    public async Task<User?> GetUserByToken(string token)
+    {
+        var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
+        SELECT
+            *
+        FROM ""user""
+        WHERE token=@token;
+        ",
+            new { token });
+
+        return user;
+    }
+    
+    public async Task<User?> GetPostUserDataById(long id)
+    {
+        var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
         SELECT
             login, name, surname
         FROM ""user""

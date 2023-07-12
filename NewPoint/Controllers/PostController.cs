@@ -21,7 +21,7 @@ public class PostController : ControllerBase
         _userService = userService;
         _logger = logger;
     }
-    
+
     [Authorize]
     [HttpPost("get")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
@@ -33,13 +33,22 @@ public class PostController : ControllerBase
         try
         {
             var posts = await _postService.GetPosts();
-            
+
             foreach (var post in posts)
             {
                 var user = await _userService.GetPostUserDataById(post.AuthorId);
-                post.Login = user.Login;
-                post.Name = user.Name;
-                post.Surname = user.Surname;
+                if (user is null)
+                {
+                    post.Login = "Unknown";
+                    post.Name = "Unknown";
+                    post.Surname = "";
+                }
+                else
+                {
+                    post.Login = user.Login;
+                    post.Name = user.Name;
+                    post.Surname = user.Surname;
+                }
             }
 
             var dataEntry = new DataEntry<List<Post>>

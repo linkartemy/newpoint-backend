@@ -44,7 +44,13 @@ public class UserService : IUserService
     public async Task<User> GetUserByLogin(string login)
         => await _userRepository.GetUserByLogin(login);
     
-    public async Task<User> GetPostUserDataById(long id)
+    public async Task<string> GetTokenById(long id)
+        => await _userRepository.GetTokenById(id);
+    
+    public async Task<User?> GetUserByToken(string token)
+        => await _userRepository.GetUserByToken(token);
+    
+    public async Task<User?> GetPostUserDataById(long id)
         => await _userRepository.GetPostUserDataById(id);
     
     public async Task<string> GetUserHashedPassword(string login)
