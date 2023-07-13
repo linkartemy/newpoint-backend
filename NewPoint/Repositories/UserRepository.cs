@@ -18,11 +18,11 @@ internal class UserRepository : IUserRepository
         return counter != 0;
     }
 
-    public async Task InsertUser(User user)
+    public async Task InsertUser(User user, string token)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
         INSERT INTO ""user"" (login, password_hash, name, surname, email, phone, date_of_birth, last_login_timestamp, ip, token, registration_timestamp)
-        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, now())
+        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, @token, now())
         RETURNING id;
         ",
             new
@@ -36,13 +36,14 @@ internal class UserRepository : IUserRepository
                 dateOfBirth = user.BirthDate,
                 lastLoginTimestamp = user.LastLoginTimeStamp,
                 ip = user.IP,
+                token
             });
         user.Id = id;
     }
     
     public async Task<User> GetUserByLogin(string login)
     {
-        var user = DatabaseHandler.Connection.QueryFirst<User>(@"
+        var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
         SELECT
             *
         FROM ""user""
@@ -53,9 +54,35 @@ internal class UserRepository : IUserRepository
         return user;
     }
     
-    public async Task<User> GetPostUserDataById(long id)
+    public async Task<string> GetTokenById(long id)
     {
-        var user = DatabaseHandler.Connection.QueryFirst<User>(@"
+        var token = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
+        SELECT
+            token
+        FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return token;
+    }
+    
+    public async Task<User?> GetUserByToken(string token)
+    {
+        var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
+        SELECT
+            *
+        FROM ""user""
+        WHERE token=@token;
+        ",
+            new { token });
+
+        return user;
+    }
+    
+    public async Task<User?> GetPostUserDataById(long id)
+    {
+        var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
         SELECT
             login, name, surname
         FROM ""user""

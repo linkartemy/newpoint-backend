@@ -20,7 +20,7 @@ public class User
     public string Email { get; set; } = string.Empty;
     [JsonProperty("phone")]
     public string Phone { get; set; } = string.Empty;
-    [JsonProperty("dateOfBirth")]
+    [JsonProperty("birthDate")]
     public DateTime BirthDate { get; set; }
     [JsonProperty("lastLoginTimeStamp")]
     public DateTime LastLoginTimeStamp { get; set; }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewPoint.Models;
 using NewPoint.Models.Requests;
@@ -87,10 +88,16 @@ public class UserController : ControllerBase
                 return BadRequest(response);
             }
 
+            if (DateTime.TryParse(request.BirthDate, out var date) is false)
+            {
+                date = DateTime.Today;
+            }
+
             var user = new User
             {
                 Login = login, Name = request.Name, Surname = request.Surname, Email = email, Phone = phone,
-                BirthDate = request.BirthDate
+                BirthDate = date, IP = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                LastLoginTimeStamp = DateTime.Now
             };
 
             if (await _userService.LoginExists(login))
@@ -101,9 +108,11 @@ public class UserController : ControllerBase
 
             _userService.AssignPasswordHash(user, password);
 
-            await _userService.InsertUser(user);
+            var token = _userService.CreateToken(user);
 
-            Response.Headers.Add("Authorization", _userService.CreateToken(user));
+            await _userService.InsertUser(user, token);
+
+            Response.Headers.Add("Authorization", token);
 
             var dataEntry = new DataEntry<User>()
             {
@@ -133,17 +142,58 @@ public class UserController : ControllerBase
             var login = request.Login.Trim();
             var password = request.Password.Trim();
 
+            if (await _userService.LoginExists(login) is false)
+            {
+                response.Error = "Wrong login or password.";
+                return BadRequest(response);
+            }
+            
             var user = await _userService.GetUserByLogin(login);
             user.HashedPassword = await _userService.GetUserHashedPassword(user.Login);
-            
-            if (await _userService.LoginExists(login) is false || _userService.VerifyPassword(user, password) is false)
+
+            if (_userService.VerifyPassword(user, password) is false)
             {
                 response.Error = "Wrong login or password.";
                 return BadRequest(response);
             }
 
-            Response.Headers.Add("Authorization", _userService.CreateToken(user));
+            Response.Headers.Add("Authorization", await _userService.GetTokenById(user.Id));
 
+            var dataEntry = new DataEntry<User>()
+            {
+                Data = user,
+                Type = "user"
+            };
+            response.Data = new[] { dataEntry };
+
+            return Ok(response);
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return StatusCode(StatusCodes.Status500InternalServerError, response);
+        }
+    }
+
+    [Authorize]
+    [HttpPost("profile/edit")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<Response>> EditProfile([FromBody] EditProfileRequest request)
+    {
+        var response = new Response();
+        try
+        {
+            if (request.Description.Length > 255)
+            {
+                response.Error = "Description length can't be over 255 symbols";
+                return BadRequest(response);
+            }
+
+            var id = _userService.GetIdFromToken(Request.Headers["Authorization"]);
+            await _userService.EditProfile(id, request);
+            var user = await _userService.GetProfileById(id);
             var dataEntry = new DataEntry<User>()
             {
                 Data = user,
@@ -160,24 +210,26 @@ public class UserController : ControllerBase
         }
     }
     
-    [HttpPost("profile/edit")]
+    [Authorize]
+    [HttpPost("get")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<Response>> EditProfile([FromBody] EditProfileRequest request)
+    public async Task<ActionResult<Response>> Get()
     {
         var response = new Response();
         try
         {
-            if (request.Description.Length > 255)
+            var token = Request.Headers["Authorization"][0]!.Split(' ')[1];
+            var user = await _userService.GetUserByToken(token);
+
+
+            if (user is null)
             {
-                response.Error = "Description length can't be over 255 symbols";
+                response.Error = "User doesn't exist. Server error. Please contact with us";
                 return BadRequest(response);
             }
-
-            var id = _userService.GetIdFromToken(Request.Headers["token"]);
-            await _userService.EditProfile(id, request);
-            var user = await _userService.GetProfileById(id);
+            
             var dataEntry = new DataEntry<User>()
             {
                 Data = user,
@@ -187,7 +239,7 @@ public class UserController : ControllerBase
 
             return Ok(response);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             response.Error = "Something went wrong. Please try again later. We are sorry";
             return StatusCode(StatusCodes.Status500InternalServerError, response);

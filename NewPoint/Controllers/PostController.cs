@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewPoint.Models;
 using NewPoint.Models.Requests;
@@ -21,6 +22,7 @@ public class PostController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize]
     [HttpPost("get")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -31,13 +33,22 @@ public class PostController : ControllerBase
         try
         {
             var posts = await _postService.GetPosts();
-            
+
             foreach (var post in posts)
             {
                 var user = await _userService.GetPostUserDataById(post.AuthorId);
-                post.Login = user.Login;
-                post.Name = user.Name;
-                post.Surname = user.Surname;
+                if (user is null)
+                {
+                    post.Login = "Unknown";
+                    post.Name = "Unknown";
+                    post.Surname = "";
+                }
+                else
+                {
+                    post.Login = user.Login;
+                    post.Name = user.Name;
+                    post.Surname = user.Surname;
+                }
             }
 
             var dataEntry = new DataEntry<List<Post>>

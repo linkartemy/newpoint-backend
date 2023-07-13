@@ -6,9 +6,11 @@ namespace NewPoint.Repositories;
 public interface IUserRepository
 {
     Task<bool> LoginExists(string login);
-    Task InsertUser(User user);
+    Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);
-    Task<User> GetPostUserDataById(long id);
+    Task<string> GetTokenById(long id);
+    Task<User?> GetUserByToken(string token);
+    Task<User?> GetPostUserDataById(long id);
     Task<string> GetUserHashedPassword(string login);
     Task EditProfile(int id, EditProfileRequest user);
     public Task<User> GetProfileById(int id);
