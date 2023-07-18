@@ -40,31 +40,35 @@ public class UserService : IUserService
 
     public async Task InsertUser(User user, string token)
         => await _userRepository.InsertUser(user, token);
-    
+
     public async Task<User> GetUserByLogin(string login)
         => await _userRepository.GetUserByLogin(login);
-    
+
     public async Task<string> GetTokenById(long id)
         => await _userRepository.GetTokenById(id);
     
+    public async Task UpdateToken(long id, string token)
+        => await _userRepository.UpdateToken(id, token);
+
     public async Task<User?> GetUserByToken(string token)
         => await _userRepository.GetUserByToken(token);
-    
+
     public async Task<User?> GetPostUserDataById(long id)
         => await _userRepository.GetPostUserDataById(id);
-    
+
     public async Task<string> GetUserHashedPassword(string login)
         => await _userRepository.GetUserHashedPassword(login);
 
     public async Task EditProfile(int id, EditProfileRequest profile)
-        => await _userRepository.EditProfile(id, profile);   
+        => await _userRepository.EditProfile(id, profile);
 
     public async Task<User> GetProfileById(int id)
         => await _userRepository.GetProfileById(id);
-    
+
     public string CreateToken(User user)
     {
-        var claims = new List<Claim> {
+        var claims = new List<Claim>
+        {
             new(ClaimTypes.UserData, user.Id.ToString())
         };
 
@@ -72,13 +76,16 @@ public class UserService : IUserService
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
         var token = new JwtSecurityToken(
             claims: claims,
-            expires: DateTime.Now.AddDays(1),
+            expires: DateTime.Now.AddDays(90),
             signingCredentials: credentials);
 
         var handler = new JwtSecurityTokenHandler().WriteToken(token);
         return handler;
     }
-    
+
+    public bool IsTokenExpired(string token)
+        => DateTime.Now >= new JwtSecurityTokenHandler().ReadJwtToken(token).ValidTo;
+
     public int GetIdFromToken(string token)
     {
         var handler = new JwtSecurityTokenHandler();

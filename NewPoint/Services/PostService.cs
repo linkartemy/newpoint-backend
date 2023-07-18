@@ -14,4 +14,7 @@ public class PostService : IPostService
     
     public async Task<List<Post>> GetPosts()
         => (await _postRepository.GetPosts()).ToList();
+    
+    public async Task<Post> GetPost(long id)
+        => await _postRepository.GetPost(id);
 }
