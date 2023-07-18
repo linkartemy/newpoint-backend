@@ -40,7 +40,7 @@ internal class UserRepository : IUserRepository
             });
         user.Id = id;
     }
-    
+
     public async Task<User> GetUserByLogin(string login)
     {
         var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
@@ -53,7 +53,7 @@ internal class UserRepository : IUserRepository
 
         return user;
     }
-    
+
     public async Task<string> GetTokenById(long id)
     {
         var token = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
@@ -66,7 +66,18 @@ internal class UserRepository : IUserRepository
 
         return token;
     }
-    
+
+    public async Task UpdateToken(long id, string token)
+    {
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        UPDATE
+            ""user""
+        SET token=@token
+        WHERE id=@id;
+        ",
+            new { id, token });
+    }
+
     public async Task<User?> GetUserByToken(string token)
     {
         var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
@@ -79,7 +90,7 @@ internal class UserRepository : IUserRepository
 
         return user;
     }
-    
+
     public async Task<User?> GetPostUserDataById(long id)
     {
         var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
@@ -92,7 +103,7 @@ internal class UserRepository : IUserRepository
 
         return user;
     }
-    
+
     public async Task<string> GetUserHashedPassword(string login)
     {
         var hashedPassword = DatabaseHandler.Connection.QueryFirst<string>(@"
@@ -118,9 +129,13 @@ internal class UserRepository : IUserRepository
             location=@location
         WHERE id=@id;
         ",
-            new {id=id, name=user.Name, surname=user.Surname, description=user.Description,birthdate=user.BirthDate,location=user.Location });
+            new
+            {
+                id = id, name = user.Name, surname = user.Surname, description = user.Description,
+                birthdate = user.BirthDate, location = user.Location
+            });
     }
-    
+
     public async Task<User> GetProfileById(int id)
     {
         var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
@@ -128,7 +143,7 @@ internal class UserRepository : IUserRepository
             ""user""
         WHERE id=@id;
         ",
-            new {id=id});
+            new { id = id });
         return user;
     }
 }

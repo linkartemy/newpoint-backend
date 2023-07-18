@@ -11,11 +11,13 @@ public interface IUserService
     Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);
     Task<string> GetTokenById(long id);
+    Task UpdateToken(long id, string token);
     Task<User?> GetUserByToken(string token);
     Task<User?> GetPostUserDataById(long id);
     public Task<User> GetProfileById(int id);
     Task<string> GetUserHashedPassword(string login);
     Task EditProfile(int id, EditProfileRequest user);
     string CreateToken(User user);
+    bool IsTokenExpired(string token);
     int GetIdFromToken(string token);
 }

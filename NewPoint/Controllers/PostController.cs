@@ -65,4 +65,45 @@ public class PostController : ControllerBase
             return StatusCode(500, response.Error);
         }
     }
+
+    [Authorize]
+    [HttpPost("get/post")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<Response>> GetPost([FromBody] GetPostRequest request)
+    {
+        var response = new Response();
+        try
+        {
+            var post = await _postService.GetPost(request.Id);
+
+            var user = await _userService.GetPostUserDataById(post.AuthorId);
+            if (user is null)
+            {
+                post.Login = "Unknown";
+                post.Name = "Unknown";
+                post.Surname = "";
+            }
+            else
+            {
+                post.Login = user.Login;
+                post.Name = user.Name;
+                post.Surname = user.Surname;
+            }
+
+            var dataEntry = new DataEntry<Post>
+            {
+                Data = post,
+                Type = "post"
+            };
+            response.Data = new[] { dataEntry };
+            return Ok(response);
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return StatusCode(500, response.Error);
+        }
+    }
 }

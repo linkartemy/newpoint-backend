@@ -18,6 +18,12 @@ public class Post
     public string Content { get; set; }
     [JsonProperty("images")]
     public string Images { get; set; }
+    [JsonProperty("likes")]
+    public int Likes { get; set; }
+    [JsonProperty("shares")]
+    public int Shares { get; set; }
+    [JsonProperty("comments")]
+    public int Comments { get; set; }
     [JsonProperty("creation_timestamp")]
     public DateTime CreationTimestamp { get; set; }
 }

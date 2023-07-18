@@ -147,7 +147,7 @@ public class UserController : ControllerBase
                 response.Error = "Wrong login or password.";
                 return BadRequest(response);
             }
-            
+
             var user = await _userService.GetUserByLogin(login);
             user.HashedPassword = await _userService.GetUserHashedPassword(user.Login);
 
@@ -157,9 +157,17 @@ public class UserController : ControllerBase
                 return BadRequest(response);
             }
 
-            Response.Headers.Add("Authorization", await _userService.GetTokenById(user.Id));
+            var token = await _userService.GetTokenById(user.Id);
 
-            var dataEntry = new DataEntry<User>()
+            if (_userService.IsTokenExpired(token))
+            {
+                token = _userService.CreateToken(user);
+                await _userService.UpdateToken(user.Id, token);
+            }
+            
+            Response.Headers.Add("Authorization", token);
+
+            var dataEntry = new DataEntry<User>
             {
                 Data = user,
                 Type = "user"
@@ -209,7 +217,7 @@ public class UserController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, response);
         }
     }
-    
+
     [Authorize]
     [HttpPost("get")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
@@ -229,7 +237,7 @@ public class UserController : ControllerBase
                 response.Error = "User doesn't exist. Server error. Please contact with us";
                 return BadRequest(response);
             }
-            
+
             var dataEntry = new DataEntry<User>()
             {
                 Data = user,
