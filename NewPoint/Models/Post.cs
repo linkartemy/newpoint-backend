@@ -24,6 +24,8 @@ public class Post
     public int Shares { get; set; }
     [JsonProperty("comments")]
     public int Comments { get; set; }
+    [JsonProperty("liked")]
+    public bool Liked { get; set; }
     [JsonProperty("creation_timestamp")]
     public DateTime CreationTimestamp { get; set; }
 }

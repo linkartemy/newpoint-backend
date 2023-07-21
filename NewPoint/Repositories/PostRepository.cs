@@ -22,7 +22,7 @@ public class PostRepository : IPostRepository
         ");
         return reader;
     }
-    
+
     public async Task<Post> GetPost(long id)
     {
         var post = await DatabaseHandler.Connection.QueryFirstAsync<Post>(@"
@@ -40,5 +40,18 @@ public class PostRepository : IPostRepository
         ",
             new { id });
         return post;
+    }
+
+    public async Task<bool> IsLikedByUser(long id, long userId)
+    {
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
+        SELECT COUNT(1) FROM ""post_like""
+        WHERE
+            post_id=@id AND
+            user_id=@userId;
+        ",
+            new { id, userId });
+
+        return counter != 0;
     }
 }

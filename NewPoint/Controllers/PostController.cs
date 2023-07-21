@@ -32,24 +32,26 @@ public class PostController : ControllerBase
         var response = new Response();
         try
         {
-            var posts = await _postService.GetPosts();
+            var posts = (await _postService.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
+                async post =>
+                {
+                    var user = await _userService.GetPostUserDataById(post.AuthorId);
+                    if (user is null)
+                    {
+                        post.Login = "Unknown";
+                        post.Name = "Unknown";
+                        post.Surname = "";
+                    }
+                    else
+                    {
+                        post.Login = user.Login;
+                        post.Name = user.Name;
+                        post.Surname = user.Surname;
+                        post.Liked = await _postService.IsLikedByUser(post.Id, user.Id);
+                    }
 
-            foreach (var post in posts)
-            {
-                var user = await _userService.GetPostUserDataById(post.AuthorId);
-                if (user is null)
-                {
-                    post.Login = "Unknown";
-                    post.Name = "Unknown";
-                    post.Surname = "";
-                }
-                else
-                {
-                    post.Login = user.Login;
-                    post.Name = user.Name;
-                    post.Surname = user.Surname;
-                }
-            }
+                    return post;
+                }).Select(post => post.Result).ToList();
 
             var dataEntry = new DataEntry<List<Post>>
             {
@@ -78,6 +80,7 @@ public class PostController : ControllerBase
         {
             var post = await _postService.GetPost(request.Id);
 
+
             var user = await _userService.GetPostUserDataById(post.AuthorId);
             if (user is null)
             {
@@ -90,6 +93,7 @@ public class PostController : ControllerBase
                 post.Login = user.Login;
                 post.Name = user.Name;
                 post.Surname = user.Surname;
+                post.Liked = await _postService.IsLikedByUser(post.Id, user.Id);
             }
 
             var dataEntry = new DataEntry<Post>

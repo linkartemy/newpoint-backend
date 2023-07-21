@@ -4,6 +4,7 @@ namespace NewPoint.Services;
 
 public interface IPostService
 {
-    Task<List<Post>> GetPosts();
+    Task<IEnumerable<Post>> GetPosts();
     Task<Post> GetPost(long id);
+    Task<bool> IsLikedByUser(long id, long userId);
 }
