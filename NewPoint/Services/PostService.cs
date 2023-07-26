@@ -20,4 +20,21 @@ public class PostService : IPostService
 
     public async Task<bool> IsLikedByUser(long id, long userId)
         => await _postRepository.IsLikedByUser(id, userId);
+
+    public async Task Like(long id, long userId)
+    {
+        await _postRepository.SetLikesById(id, await _postRepository.GetLikesById(id) + 1);
+        await _postRepository.InsertPostLike(id, userId);
+    }
+
+    public async Task UnLike(long id, long userId)
+    {
+        await _postRepository.SetLikesById(id, await _postRepository.GetLikesById(id) - 1);
+        await _postRepository.DeletePostLike(id, userId);
+    }
+    
+    public async Task Share(long id, long userId)
+    {
+        await _postRepository.SetSharesById(id, await _postRepository.GetSharesById(id) + 1);
+    }
 }
