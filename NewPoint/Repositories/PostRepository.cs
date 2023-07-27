@@ -126,4 +126,21 @@ public class PostRepository : IPostRepository
         ",
             new { postId, shares });
     }
+    
+    public async Task<IEnumerable<Comment>> GetCommentsById(long postId)
+    {
+        var comments = await DatabaseHandler.Connection.QueryAsync<Comment>(@"
+        SELECT 
+            id AS id,
+            user_id AS UserId,
+            post_id AS PostId,
+            content AS Content,
+            likes AS Likes,
+            creation_timestamp as CreationTimestamp
+        FROM ""comment""
+        WHERE post_id=@postId;
+        ",
+            new { postId });
+        return comments;
+    }
 }

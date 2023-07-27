@@ -13,4 +13,5 @@ public interface IPostRepository
     Task DeletePostLike(long postId, long userId);
     Task<long> GetSharesById(long postId);
     Task SetSharesById(long postId, long shares);
+    Task<IEnumerable<Comment>> GetCommentsById(long postId);
 }

@@ -15,26 +15,35 @@ public class PostService : IPostService
     public async Task<IEnumerable<Post>> GetPosts()
         => await _postRepository.GetPosts();
 
-    public async Task<Post> GetPost(long id)
-        => await _postRepository.GetPost(id);
+    public async Task<Post> GetPost(long postId)
+        => await _postRepository.GetPost(postId);
 
-    public async Task<bool> IsLikedByUser(long id, long userId)
-        => await _postRepository.IsLikedByUser(id, userId);
+    public async Task<bool> IsLikedByUser(long postId, long userId)
+        => await _postRepository.IsLikedByUser(postId, userId);
 
-    public async Task Like(long id, long userId)
+    public async Task Like(long postId, long userId)
     {
-        await _postRepository.SetLikesById(id, await _postRepository.GetLikesById(id) + 1);
-        await _postRepository.InsertPostLike(id, userId);
+        await _postRepository.SetLikesById(postId, await _postRepository.GetLikesById(postId) + 1);
+        await _postRepository.InsertPostLike(postId, userId);
     }
 
-    public async Task UnLike(long id, long userId)
+    public async Task UnLike(long postId, long userId)
     {
-        await _postRepository.SetLikesById(id, await _postRepository.GetLikesById(id) - 1);
-        await _postRepository.DeletePostLike(id, userId);
+        await _postRepository.SetLikesById(postId, await _postRepository.GetLikesById(postId) - 1);
+        await _postRepository.DeletePostLike(postId, userId);
     }
     
-    public async Task Share(long id, long userId)
+    public async Task Share(long postId, long userId)
     {
-        await _postRepository.SetSharesById(id, await _postRepository.GetSharesById(id) + 1);
+        await _postRepository.SetSharesById(postId, await _postRepository.GetSharesById(postId) + 1);
+    }
+    
+    public async Task<IEnumerable<Comment>> GetComments(long postId)
+        => await _postRepository.GetCommentsById(postId);
+    
+    public async Task LikeComment(long postId, long userId)
+    {
+        await _postRepository.SetLikesById(postId, await _postRepository.GetLikesById(postId) + 1);
+        await _postRepository.InsertPostLike(postId, userId);
     }
 }
