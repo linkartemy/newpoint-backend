@@ -70,6 +70,41 @@ public class CommentController : ControllerBase
     }
     
     [Authorize]
+    [HttpPost("add")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<Response>> Add([FromBody] CommentAddRequest request)
+    {
+        var response = new Response();
+        try
+        {
+            var token = Request.Headers["Authorization"][0]!.Split(' ')[1];
+            var user = await _userService.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                return BadRequest(response);
+            }
+
+            await _commentService.Add(request.Id, user.Id, request.Content);
+
+            var dataEntry = new DataEntry<bool>
+            {
+                Data = true,
+                Type = "bool"
+            };
+            response.Data = new[] { dataEntry };
+            return Ok(response);
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return StatusCode(500, response.Error);
+        }
+    }
+    
+    [Authorize]
     [HttpPost("like")]
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

@@ -37,13 +37,4 @@ public class PostService : IPostService
     {
         await _postRepository.SetSharesById(postId, await _postRepository.GetSharesById(postId) + 1);
     }
-    
-    public async Task<IEnumerable<Comment>> GetComments(long postId)
-        => await _postRepository.GetCommentsById(postId);
-    
-    public async Task LikeComment(long postId, long userId)
-    {
-        await _postRepository.SetLikesById(postId, await _postRepository.GetLikesById(postId) + 1);
-        await _postRepository.InsertPostLike(postId, userId);
-    }
 }

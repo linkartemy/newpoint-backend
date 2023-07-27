@@ -6,6 +6,20 @@ namespace NewPoint.Repositories;
 
 public class CommentRepository : ICommentRepository
 {
+    public async Task<long> Insert(long postId, long userId, string content)
+    {
+        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
+        INSERT INTO ""comment"" (post_id, user_id, content)
+        VALUES (@postId, @userId, @content)
+        RETURNING id;
+        ",
+            new
+            {
+                postId, userId, content
+            });
+        return id;
+    }
+    
     public async Task<IEnumerable<Comment>> GetCommentsByPostId(long postId)
     {
         var comments = await DatabaseHandler.Connection.QueryAsync<Comment>(@"
@@ -26,9 +40,9 @@ public class CommentRepository : ICommentRepository
     public async Task<bool> IsLikedByUser(long commentId, long userId)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
-        SELECT COUNT(1) FROM ""post_like""
+        SELECT COUNT(1) FROM ""comment_like""
         WHERE
-            id=@commentId AND
+            comment_id=@commentId AND
             user_id=@userId;
         ",
             new { commentId, userId });

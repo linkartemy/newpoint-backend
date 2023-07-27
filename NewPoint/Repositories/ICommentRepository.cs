@@ -4,6 +4,7 @@ namespace NewPoint.Repositories;
 
 public interface ICommentRepository
 {
+    Task<long> Insert(long postId, long userId, string content);
     Task<IEnumerable<Comment>> GetCommentsByPostId(long postId);
     Task<bool> IsLikedByUser(long commentId, long userId);
     Task<long> GetLikesById(long commentId);
