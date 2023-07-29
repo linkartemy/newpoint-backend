@@ -2,12 +2,11 @@
 
 namespace NewPoint.Services;
 
-public interface IPostService
+public interface ICommentService
 {
-    Task<IEnumerable<Post>> GetPosts();
-    Task<Post> GetPost(long id);
+    Task<IEnumerable<Comment>> GetCommentsByPostId(long id);
     Task<bool> IsLikedByUser(long id, long userId);
+    Task Add(long id, long userId, string content);
     Task Like(long id, long userId);
     Task UnLike(long id, long userId);
-    Task Share(long id, long userId);
 }

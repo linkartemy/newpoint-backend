@@ -55,9 +55,9 @@ public class PostRepository : IPostRepository
         return counter != 0;
     }
 
-    public async Task<long> GetLikesById(long postId)
+    public async Task<int> GetLikesById(long postId)
     {
-        var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@"
+        var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
         SELECT
             likes
         FROM ""post""
@@ -67,7 +67,7 @@ public class PostRepository : IPostRepository
         return likes;
     }
 
-    public async Task SetLikesById(long postId, long likes)
+    public async Task SetLikesById(long postId, int likes)
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@"
         UPDATE
@@ -104,9 +104,9 @@ public class PostRepository : IPostRepository
             });
     }
     
-    public async Task<long> GetSharesById(long postId)
+    public async Task<int> GetSharesById(long postId)
     {
-        var shares = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@"
+        var shares = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
         SELECT
             shares
         FROM ""post""
@@ -116,7 +116,7 @@ public class PostRepository : IPostRepository
         return shares;
     }
 
-    public async Task SetSharesById(long postId, long shares)
+    public async Task SetSharesById(long postId, int shares)
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@"
         UPDATE
@@ -125,5 +125,28 @@ public class PostRepository : IPostRepository
         WHERE id=@postId;
         ",
             new { postId, shares });
+    }
+    
+    public async Task<int> GetCommentsById(long postId)
+    {
+        var comments = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
+        SELECT
+            comments
+        FROM ""post""
+        WHERE id=@postId;
+        ",
+            new { postId });
+        return comments;
+    }
+
+    public async Task SetCommentsById(long postId, int comments)
+    {
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        UPDATE
+            ""post""
+        SET comments=@comments
+        WHERE id=@postId;
+        ",
+            new { postId, comments });
     }
 }
