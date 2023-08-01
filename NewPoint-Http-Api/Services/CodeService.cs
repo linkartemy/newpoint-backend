@@ -36,3 +36,8 @@ public class CodeService : ICodeService
     private string GenerateCode()
         => new Random().Next(1000, 9999).ToString();
 }
+
+public interface ICodeService
+{
+    Task SendCodeToEmail(int userId, string email);
+}

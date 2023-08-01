@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NewPoint.Handlers;
 using NewPoint.Models;
 using NewPoint.Models.Requests;
 using NewPoint.Services;
@@ -97,7 +98,7 @@ public class UserController : ControllerBase
             {
                 Login = login, Name = request.Name, Surname = request.Surname, Email = email, Phone = phone,
                 BirthDate = date, IP = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                LastLoginTimeStamp = DateTime.Now
+                LastLoginTimestamp = DateTime.Now
             };
 
             if (await _userService.LoginExists(login))
@@ -106,9 +107,9 @@ public class UserController : ControllerBase
                 return BadRequest(response);
             }
 
-            _userService.AssignPasswordHash(user, password);
+            AuthenticationHandler.AssignPasswordHash(user, password);
 
-            var token = _userService.CreateToken(user);
+            var token = AuthenticationHandler.CreateToken(user);
 
             await _userService.InsertUser(user, token);
 
@@ -151,7 +152,7 @@ public class UserController : ControllerBase
             var user = await _userService.GetUserByLogin(login);
             user.HashedPassword = await _userService.GetUserHashedPassword(user.Login);
 
-            if (_userService.VerifyPassword(user, password) is false)
+            if (AuthenticationHandler.VerifyPassword(user, password) is false)
             {
                 response.Error = "Wrong login or password.";
                 return BadRequest(response);
@@ -159,9 +160,9 @@ public class UserController : ControllerBase
 
             var token = await _userService.GetTokenById(user.Id);
 
-            if (_userService.IsTokenExpired(token))
+            if (AuthenticationHandler.IsTokenExpired(token))
             {
-                token = _userService.CreateToken(user);
+                token = AuthenticationHandler.CreateToken(user);
                 await _userService.UpdateToken(user.Id, token);
             }
             
@@ -199,7 +200,7 @@ public class UserController : ControllerBase
                 return BadRequest(response);
             }
 
-            var id = _userService.GetIdFromToken(Request.Headers["Authorization"]);
+            var id = AuthenticationHandler.GetIdFromToken(Request.Headers["Authorization"]);
             await _userService.EditProfile(id, request);
             var user = await _userService.GetProfileById(id);
             var dataEntry = new DataEntry<User>()

@@ -1,40 +1,228 @@
-﻿using NewPoint.Models;
+using System.Text.RegularExpressions;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using NewPoint;
+using NewPoint.Handlers;
+using NewPoint.Models;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
 
-public class PostService : IPostService
+public class PostService : GrpcPost.GrpcPostBase
 {
+    private readonly IUserRepository _userRepository;
     private readonly IPostRepository _postRepository;
+    private readonly ILogger<PostService> _logger;
 
-    public PostService(IPostRepository postRepository)
+    public PostService(IUserRepository userRepository, IPostRepository postRepository, ILogger<PostService> logger)
     {
+        _userRepository = userRepository;
         _postRepository = postRepository;
+        _logger = logger;
     }
 
-    public async Task<IEnumerable<Post>> GetPosts()
-        => await _postRepository.GetPosts();
-
-    public async Task<Post> GetPost(long postId)
-        => await _postRepository.GetPost(postId);
-
-    public async Task<bool> IsLikedByUser(long postId, long userId)
-        => await _postRepository.IsLikedByUser(postId, userId);
-
-    public async Task Like(long postId, long userId)
+    public override async Task<Response> GetPosts(GetPostsRequest request, ServerCallContext context)
     {
-        await _postRepository.SetLikesById(postId, await _postRepository.GetLikesById(postId) + 1);
-        await _postRepository.InsertPostLike(postId, userId);
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
+                async post =>
+                {
+                    var user = await _userRepository.GetPostUserDataById(post.AuthorId);
+                    if (user is null)
+                    {
+                        post.Login = "Unknown";
+                        post.Name = "Unknown";
+                        post.Surname = "";
+                    }
+                    else
+                    {
+                        post.Login = user.Login;
+                        post.Name = user.Name;
+                        post.Surname = user.Surname;
+                    }
+
+                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                    post.Liked =
+                        await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+
+                    var postModel = new PostModel
+                    {
+                        Id = post.Id, Login = post.Login, Name = post.Name, Surname = post.Surname,
+                        Content = post.Content,
+                        Images = post.Images, Likes = post.Likes, Shares = post.Shares, Comments = post.Comments,
+                        Liked = post.Liked,
+                        CreationTimestamp = DateTimeHandler.TimestampToDateTime(post.CreationTimestamp)
+                    };
+
+                    return postModel;
+                }).Select(post => post.Result).ToList();
+
+            response.Data = Any.Pack(new GetPostsResponse { Posts = { posts } });
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
     }
 
-    public async Task UnLike(long postId, long userId)
+    public override async Task<Response> GetPostById(GetPostByIdRequest request, ServerCallContext context)
     {
-        await _postRepository.SetLikesById(postId, await _postRepository.GetLikesById(postId) - 1);
-        await _postRepository.DeletePostLike(postId, userId);
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var post = await _postRepository.GetPost(request.Id);
+
+            var user = await _userRepository.GetPostUserDataById(post.AuthorId);
+            if (user is null)
+            {
+                post.Login = "Unknown";
+                post.Name = "Unknown";
+                post.Surname = "";
+            }
+            else
+            {
+                post.Login = user.Login;
+                post.Name = user.Name;
+                post.Surname = user.Surname;
+            }
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            post.Liked = await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+
+            var postModel = new PostModel
+            {
+                Id = post.Id, Login = post.Login, Name = post.Name, Surname = post.Surname,
+                Content = post.Content,
+                Images = post.Images, Likes = post.Likes, Shares = post.Shares, Comments = post.Comments,
+                Liked = post.Liked,
+                CreationTimestamp = DateTimeHandler.TimestampToDateTime(post.CreationTimestamp)
+            };
+
+            response.Data = Any.Pack(new GetPostByIdResponse { Post = postModel });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
     }
-    
-    public async Task Share(long postId, long userId)
+
+    public override async Task<Response> LikePost(LikePostRequest request, ServerCallContext context)
     {
-        await _postRepository.SetSharesById(postId, await _postRepository.GetSharesById(postId) + 1);
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _postRepository.SetLikesById(request.PostId, await _postRepository.GetLikesById(request.PostId) + 1);
+            await _postRepository.InsertPostLike(request.PostId, user.Id);
+
+            response.Data = Any.Pack(new LikePostResponse
+            {
+                Liked = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> UnLikePost(UnLikePostRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _postRepository.SetLikesById(request.PostId, await _postRepository.GetLikesById(request.PostId) - 1);
+            await _postRepository.DeletePostLike(request.PostId, user.Id);
+
+            response.Data = Any.Pack(new UnLikePostResponse
+            {
+                Liked = false
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> SharePost(SharePostRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _postRepository.SetSharesById(request.PostId,
+                await _postRepository.GetSharesById(request.PostId) + 1);
+
+            response.Data = Any.Pack(new SharePostResponse
+            {
+                Shared = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
     }
 }

@@ -1,95 +1,240 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using NewPoint.Configurations;
+using System.Text.RegularExpressions;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using NewPoint;
+using NewPoint.Handlers;
 using NewPoint.Models;
-using NewPoint.Models.Requests;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
 
-public class UserService : IUserService
+public class UserService : GrpcUser.GrpcUserBase
 {
-    private IOptions<JwtConfiguration> _jwtConfiguration;
-    private IUserRepository _userRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IOptions<JwtConfiguration> jwtConfiguration, IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, ILogger<UserService> logger)
     {
-        _jwtConfiguration = jwtConfiguration;
         _userRepository = userRepository;
+        _logger = logger;
     }
 
-    public async Task<bool> LoginExists(string login)
-        => await _userRepository.LoginExists(login);
-
-    public void AssignPasswordHash(User user, string password)
+    public override async Task<Response> Login(LoginRequest request, ServerCallContext context)
     {
-        var passwordHasher = new PasswordHasher<User>();
-        user.HashedPassword = passwordHasher.HashPassword(user, password);
-    }
-
-    public bool VerifyPassword(User user, string password)
-    {
-        var passwordHasher = new PasswordHasher<User>();
-        return passwordHasher.VerifyHashedPassword(user, user.HashedPassword, password) is PasswordVerificationResult
-            .Success;
-    }
-
-    public async Task InsertUser(User user, string token)
-        => await _userRepository.InsertUser(user, token);
-
-    public async Task<User> GetUserByLogin(string login)
-        => await _userRepository.GetUserByLogin(login);
-
-    public async Task<string> GetTokenById(long id)
-        => await _userRepository.GetTokenById(id);
-    
-    public async Task UpdateToken(long id, string token)
-        => await _userRepository.UpdateToken(id, token);
-
-    public async Task<User?> GetUserByToken(string token)
-        => await _userRepository.GetUserByToken(token);
-
-    public async Task<User?> GetPostUserDataById(long id)
-        => await _userRepository.GetPostUserDataById(id);
-
-    public async Task<string> GetUserHashedPassword(string login)
-        => await _userRepository.GetUserHashedPassword(login);
-
-    public async Task EditProfile(int id, EditProfileRequest profile)
-        => await _userRepository.EditProfile(id, profile);
-
-    public async Task<User> GetProfileById(int id)
-        => await _userRepository.GetProfileById(id);
-
-    public string CreateToken(User user)
-    {
-        var claims = new List<Claim>
+        var response = new Response
         {
-            new(ClaimTypes.UserData, user.Id.ToString())
+            Status = 200,
         };
+        try
+        {
+            var login = request.Login.Trim();
+            var password = request.Password.Trim();
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfiguration.Value.Token));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-        var token = new JwtSecurityToken(
-            claims: claims,
-            expires: DateTime.Now.AddDays(90),
-            signingCredentials: credentials);
+            if (await _userRepository.LoginExists(login) is false)
+            {
+                response.Error = "Wrong login or password";
+                response.Status = 400;
+                return response;
+            }
 
-        var handler = new JwtSecurityTokenHandler().WriteToken(token);
-        return handler;
+            var user = await _userRepository.GetUserByLogin(login);
+            user.HashedPassword = await _userRepository.GetUserHashedPassword(user.Login);
+
+            if (AuthenticationHandler.VerifyPassword(user, password) is false)
+            {
+                response.Error = "Wrong login or password";
+                response.Status = 400;
+                return response;
+            }
+
+            var token = await _userRepository.GetTokenById(user.Id);
+
+            if (AuthenticationHandler.IsTokenExpired(token))
+            {
+                token = AuthenticationHandler.CreateToken(user);
+                await _userRepository.UpdateToken(user.Id, token);
+            }
+
+            context.GetHttpContext().Response.Headers.Add("Authorization", token);
+            var data = new UserModel
+            {
+                Id = user.Id, Login = user.Login, Email = user.Email, Image = user.Image, Ip = user.IP,
+                Phone = user.Phone, LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp),
+                RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp),
+                BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate)
+            };
+            response.Data = Any.Pack(data);
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
     }
 
-    public bool IsTokenExpired(string token)
-        => DateTime.Now >= new JwtSecurityTokenHandler().ReadJwtToken(token).ValidTo;
-
-    public int GetIdFromToken(string token)
+    public override async Task<Response> Register(RegisterRequest request, ServerCallContext context)
     {
-        var handler = new JwtSecurityTokenHandler();
-        var jwtSecurityToken = handler.ReadJwtToken(token);
-        return int.Parse(jwtSecurityToken.Claims.First(claim => claim.Type == ClaimTypes.UserData).Value);
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var login = request.Login.Trim();
+
+            if (login.Length < 4)
+            {
+                response.Error = "Username must be at least 4 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            if (login.Length > 32)
+            {
+                response.Error = "Username's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var password = request.Password.Trim();
+
+            if (password.Length < 8)
+            {
+                response.Error = "Password's length must be at least 8 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            if (password.Length > 32)
+            {
+                response.Error = "Password's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var hasNumber = new Regex(@"[0-9]+");
+            var hasUpperChar = new Regex(@"[A-Z]+");
+
+            if (!hasNumber.IsMatch(password))
+            {
+                response.Error = "Password must contain at least 1 digit";
+                response.Status = 400;
+                return response;
+            }
+
+            if (!hasUpperChar.IsMatch(password))
+            {
+                response.Error = "Password must contain at least 1 capital letter";
+                response.Status = 400;
+                return response;
+            }
+
+            if (password.Length > 32)
+            {
+                response.Error = "Password's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var email = request.Email.Trim();
+            var phone = request.Phone.Trim();
+
+            if (email.Length == 0 && phone.Length == 0)
+            {
+                response.Error = "You must provide either email or phone number";
+                response.Status = 400;
+                return response;
+            }
+
+            if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false)
+            {
+                date = DateTime.Today;
+            }
+
+            var user = new User
+            {
+                Login = login, Name = request.Name, Surname = request.Surname, Email = email, Phone = phone,
+                BirthDate = date, IP = context.Peer,
+                LastLoginTimestamp = DateTime.Now
+            };
+
+            if (await _userRepository.LoginExists(login))
+            {
+                response.Error = "User with this name already exists";
+                response.Status = 400;
+                return response;
+            }
+
+            AuthenticationHandler.AssignPasswordHash(user, password);
+
+            var token = AuthenticationHandler.CreateToken(user);
+
+            await _userRepository.InsertUser(user, token);
+
+            context.GetHttpContext().Response.Headers.Add("Authorization", token);
+
+            response.Data = Any.Pack(new RegisterResponse
+            {
+                User = new UserModel
+                {
+                    Id = user.Id, Login = user.Login, Email = user.Email, Image = user.Image, Ip = user.IP,
+                    Phone = user.Phone,
+                    LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp),
+                    RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp),
+                    BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate)
+                }
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetUserByToken(GetUserByTokenRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200,
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            response.Data = Any.Pack(new GetUserByTokenResponse
+            {
+                User = new UserModel
+                {
+                    Id = user.Id, Name = user.Name, Surname = user.Surname, Login = user.Login, Email = user.Email,
+                    Image = user.Image, Ip = user.IP,
+                    Phone = user.Phone,
+                    LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp),
+                    RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp),
+                    BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate)
+                }
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
     }
 }

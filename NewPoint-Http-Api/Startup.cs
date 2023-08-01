@@ -1,14 +1,14 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NewPoint.Configurations;
+using Newtonsoft.Json.Converters;
+using Swashbuckle.AspNetCore.Filters;
+using System.Text;
 using NewPoint.Handlers;
 using NewPoint.Repositories;
 using NewPoint.Services;
-using Newtonsoft.Json.Converters;
-using Swashbuckle.AspNetCore.Filters;
 
 namespace NewPoint;
 
@@ -27,28 +27,28 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddGrpc(options => { options.EnableDetailedErrors = true; });
-        services.AddMvc(options => options.EnableEndpointRouting = false);
-        
+        services.AddGrpcReflection();
+
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(
-                      builder =>
-                      {
-                          builder
-                            .AllowAnyHeader()
-                            .AllowAnyMethod()
-                            .SetIsOriginAllowed(origin => true)
-                            .AllowCredentials();
-                      });
+                builder =>
+                {
+                    builder
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .SetIsOriginAllowed(origin => true)
+                        .AllowCredentials();
+                });
         });
 
-        // services.AddSingleton<IUserService, UserService>();
+        services.AddSingleton<IUserService, UserService>();
         services.AddSingleton<IUserRepository, UserRepository>();
-        // services.AddSingleton<IPostService, PostService>();
+        services.AddSingleton<IPostService, PostService>();
         services.AddSingleton<IPostRepository, PostRepository>();
-        // services.AddSingleton<ICodeService, CodeService>();
+        services.AddSingleton<ICodeService, CodeService>();
         services.AddSingleton<ICodeRepository, CodeRepository>();
-        // services.AddSingleton<ICommentService, CommentService>();
+        services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<ICommentRepository, CommentRepository>();
         services.AddEndpointsApiExplorer();
 
@@ -72,13 +72,10 @@ public class Startup
         });
 
         services.AddControllers().AddNewtonsoftJson(options =>
-        options.SerializerSettings.Converters.Add(new StringEnumConverter()));
+            options.SerializerSettings.Converters.Add(new StringEnumConverter()));
         services.AddControllers().AddNewtonsoftJson();
 
-        services.Configure<IISServerOptions>(options =>
-        {
-            options.MaxRequestBodySize = long.MaxValue;
-        });
+        services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = long.MaxValue; });
 
         services.Configure<FormOptions>(x =>
         {
@@ -91,8 +88,9 @@ public class Startup
 
         DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
 
+        services.Configure<JwtConfiguration>(Configuration.GetSection(nameof(JwtConfiguration)));
         AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
-        
+
         services.Configure<SMTPConfiguration>(Configuration.GetSection(nameof(SMTPConfiguration)));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -118,13 +116,13 @@ public class Startup
                         {
                             context.Response.Headers.Add("is-token-expired", "true");
                         }
+
                         return Task.CompletedTask;
                     }
                 };
             });
 
         services.AddSwaggerGenNewtonsoftSupport();
-        services.AddGrpcReflection();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -140,16 +138,18 @@ public class Startup
             app.UseDeveloperExceptionPage();
         }
 
+        app.UseGrpcWeb();
+
         app.UseHttpsRedirection();
 
         app.UseRouting();
 
         app.UseCors(options
             => options
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .SetIsOriginAllowed(origin => true)
-        .AllowCredentials());
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .SetIsOriginAllowed(origin => true)
+                .AllowCredentials());
 
         app.UseAuthentication();
 
@@ -157,9 +157,7 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapGrpcService<UserService>();
-            endpoints.MapGrpcService<PostService>();
-            endpoints.MapGrpcService<CommentService>();
+            endpoints.MapGrpcService<UserService>().EnableGrpcWeb();
             endpoints.MapGrpcReflectionService();
             endpoints.MapControllers();
         });

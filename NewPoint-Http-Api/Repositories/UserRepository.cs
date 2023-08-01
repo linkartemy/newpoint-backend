@@ -1,6 +1,7 @@
 using Dapper;
 using NewPoint.Handlers;
 using NewPoint.Models;
+using NewPoint.Models.Requests;
 
 namespace NewPoint.Repositories;
 
@@ -116,24 +117,24 @@ internal class UserRepository : IUserRepository
         return hashedPassword;
     }
 
-    // public async Task EditProfile(int id, EditProfileRequest user)
-    // {
-    //     await DatabaseHandler.Connection.ExecuteAsync(@"
-    //     UPDATE
-    //         ""user""
-    //     SET name=@name,
-    //         surname=@surname,
-    //         description=@description,
-    //         birthdate=@birthdate,
-    //         location=@location
-    //     WHERE id=@id;
-    //     ",
-    //         new
-    //         {
-    //             id = id, name = user.Name, surname = user.Surname, description = user.Description,
-    //             birthdate = user.BirthDate, location = user.Location
-    //         });
-    // }
+    public async Task EditProfile(int id, EditProfileRequest user)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET name=@name,
+            surname=@surname,
+            description=@description,
+            birthdate=@birthdate,
+            location=@location
+        WHERE id=@id;
+        ",
+            new
+            {
+                id = id, name = user.Name, surname = user.Surname, description = user.Description,
+                birthdate = user.BirthDate, location = user.Location
+            });
+    }
 
     public async Task<User> GetProfileById(int id)
     {
@@ -157,6 +158,6 @@ public interface IUserRepository
     Task<User?> GetUserByToken(string token);
     Task<User?> GetPostUserDataById(long id);
     Task<string> GetUserHashedPassword(string login);
-    //Task EditProfile(int id, EditProfileRequest user);
+    Task EditProfile(int id, EditProfileRequest user);
     public Task<User> GetProfileById(int id);
 }

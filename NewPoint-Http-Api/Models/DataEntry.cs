@@ -11,3 +11,8 @@ public class DataEntry<T> : IDataEntry
     [JsonProperty("data")]
     public T Data { get; set; }
 }
+
+public interface IDataEntry
+{
+    public ulong Id { get; set; }
+}
