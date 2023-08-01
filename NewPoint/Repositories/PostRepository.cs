@@ -103,7 +103,7 @@ public class PostRepository : IPostRepository
                 postId, userId
             });
     }
-    
+
     public async Task<int> GetSharesById(long postId)
     {
         var shares = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
@@ -126,7 +126,7 @@ public class PostRepository : IPostRepository
         ",
             new { postId, shares });
     }
-    
+
     public async Task<int> GetCommentsById(long postId)
     {
         var comments = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"

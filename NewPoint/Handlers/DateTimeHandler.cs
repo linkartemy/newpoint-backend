@@ -17,12 +17,12 @@ public static class DateTimeHandler
             return false;
         }
     }
-    
+
     public static DateTime TimestampToDateTime(Timestamp timestamp)
     {
         return timestamp.ToDateTime();
     }
-    
+
     public static bool TryTimestampToDateTime(DateTime dateTime, out Timestamp timestamp)
     {
         try

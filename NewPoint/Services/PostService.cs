@@ -1,18 +1,15 @@
-using System.Text.RegularExpressions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using NewPoint;
 using NewPoint.Handlers;
-using NewPoint.Models;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
 
 public class PostService : GrpcPost.GrpcPostBase
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IPostRepository _postRepository;
     private readonly ILogger<PostService> _logger;
+    private readonly IPostRepository _postRepository;
+    private readonly IUserRepository _userRepository;
 
     public PostService(IUserRepository userRepository, IPostRepository postRepository, ILogger<PostService> logger)
     {
@@ -25,7 +22,7 @@ public class PostService : GrpcPost.GrpcPostBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -77,7 +74,7 @@ public class PostService : GrpcPost.GrpcPostBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -125,7 +122,7 @@ public class PostService : GrpcPost.GrpcPostBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -160,7 +157,7 @@ public class PostService : GrpcPost.GrpcPostBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -195,7 +192,7 @@ public class PostService : GrpcPost.GrpcPostBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {

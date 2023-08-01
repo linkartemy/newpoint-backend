@@ -19,7 +19,7 @@ public class CommentRepository : ICommentRepository
             });
         return id;
     }
-    
+
     public async Task<IEnumerable<Comment>> GetCommentsByPostId(long postId)
     {
         var comments = await DatabaseHandler.Connection.QueryAsync<Comment>(@"
@@ -36,7 +36,7 @@ public class CommentRepository : ICommentRepository
             new { postId });
         return comments;
     }
-    
+
     public async Task<bool> IsLikedByUser(long commentId, long userId)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"

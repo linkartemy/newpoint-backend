@@ -8,7 +8,7 @@ public class CodeRepository : ICodeRepository
 {
     private static int _count;
     private readonly List<CodeData> _codes = new();
-    
+
     public async Task AddEmailCode(long userId, string email, string code, int lifeTime = 120000)
     {
         var codeData = new CodeData
@@ -34,10 +34,7 @@ public class CodeRepository : ICodeRepository
     private void RemoveCode(object? source, ElapsedEventArgs args, long id)
     {
         var index = _codes.FindIndex(c => c.Id == id);
-        if (index != -1)
-        {
-            _codes.RemoveAt(index);
-        }
+        if (index != -1) _codes.RemoveAt(index);
     }
 }
 

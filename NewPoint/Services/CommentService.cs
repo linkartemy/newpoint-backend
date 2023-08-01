@@ -1,19 +1,16 @@
-using System.Text.RegularExpressions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using NewPoint;
 using NewPoint.Handlers;
-using NewPoint.Models;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
 
 public class CommentService : GrpcComment.GrpcCommentBase
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IPostRepository _postRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly ILogger<PostService> _logger;
+    private readonly IPostRepository _postRepository;
+    private readonly IUserRepository _userRepository;
 
     public CommentService(IUserRepository userRepository, IPostRepository postRepository,
         ICommentRepository commentRepository, ILogger<PostService> logger)
@@ -29,7 +26,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -80,7 +77,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -114,7 +111,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -127,7 +124,8 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 return response;
             }
 
-            await _commentRepository.SetLikesById(request.CommentId, await _commentRepository.GetLikesById(request.CommentId) + 1);
+            await _commentRepository.SetLikesById(request.CommentId,
+                await _commentRepository.GetLikesById(request.CommentId) + 1);
             await _commentRepository.InsertCommentLike(request.CommentId, user.Id);
 
             response.Data = Any.Pack(new LikeCommentResponse
@@ -149,7 +147,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -162,7 +160,8 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 return response;
             }
 
-            await _commentRepository.SetLikesById(request.CommentId, await _commentRepository.GetLikesById(request.CommentId) - 1);
+            await _commentRepository.SetLikesById(request.CommentId,
+                await _commentRepository.GetLikesById(request.CommentId) - 1);
             await _commentRepository.DeleteCommentLike(request.CommentId, user.Id);
 
             response.Data = Any.Pack(new UnLikeCommentResponse
