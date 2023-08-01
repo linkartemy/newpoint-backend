@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using NewPoint;
 using NewPoint.Handlers;
 using NewPoint.Models;
 using NewPoint.Repositories;
@@ -10,8 +9,8 @@ namespace NewPoint.Services;
 
 public class UserService : GrpcUser.GrpcUserBase
 {
-    private readonly IUserRepository _userRepository;
     private readonly ILogger<UserService> _logger;
+    private readonly IUserRepository _userRepository;
 
     public UserService(IUserRepository userRepository, ILogger<UserService> logger)
     {
@@ -23,7 +22,7 @@ public class UserService : GrpcUser.GrpcUserBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -78,7 +77,7 @@ public class UserService : GrpcUser.GrpcUserBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {
@@ -148,10 +147,7 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
-            if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false)
-            {
-                date = DateTime.Today;
-            }
+            if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false) date = DateTime.Today;
 
             var user = new User
             {
@@ -201,7 +197,7 @@ public class UserService : GrpcUser.GrpcUserBase
     {
         var response = new Response
         {
-            Status = 200,
+            Status = 200
         };
         try
         {

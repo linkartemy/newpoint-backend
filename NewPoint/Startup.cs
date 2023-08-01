@@ -14,13 +14,13 @@ namespace NewPoint;
 
 public class Startup
 {
-    private bool InDocker
-        => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
     }
+
+    private bool InDocker
+        => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
     public IConfiguration Configuration { get; }
 
@@ -28,18 +28,18 @@ public class Startup
     {
         services.AddGrpc(options => { options.EnableDetailedErrors = true; });
         services.AddMvc(options => options.EnableEndpointRouting = false);
-        
+
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(
-                      builder =>
-                      {
-                          builder
-                            .AllowAnyHeader()
-                            .AllowAnyMethod()
-                            .SetIsOriginAllowed(origin => true)
-                            .AllowCredentials();
-                      });
+                builder =>
+                {
+                    builder
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .SetIsOriginAllowed(origin => true)
+                        .AllowCredentials();
+                });
         });
 
         // services.AddSingleton<IUserService, UserService>();
@@ -67,18 +67,15 @@ public class Startup
             {
                 Title = "API",
                 Version = "v1",
-                Description = "API",
+                Description = "API"
             });
         });
 
         services.AddControllers().AddNewtonsoftJson(options =>
-        options.SerializerSettings.Converters.Add(new StringEnumConverter()));
+            options.SerializerSettings.Converters.Add(new StringEnumConverter()));
         services.AddControllers().AddNewtonsoftJson();
 
-        services.Configure<IISServerOptions>(options =>
-        {
-            options.MaxRequestBodySize = long.MaxValue;
-        });
+        services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = long.MaxValue; });
 
         services.Configure<FormOptions>(x =>
         {
@@ -92,7 +89,7 @@ public class Startup
         DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
 
         AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
-        
+
         services.Configure<SMTPConfiguration>(Configuration.GetSection(nameof(SMTPConfiguration)));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -115,9 +112,7 @@ public class Startup
                     OnAuthenticationFailed = context =>
                     {
                         if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                        {
                             context.Response.Headers.Add("is-token-expired", "true");
-                        }
                         return Task.CompletedTask;
                     }
                 };
@@ -146,10 +141,10 @@ public class Startup
 
         app.UseCors(options
             => options
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .SetIsOriginAllowed(origin => true)
-        .AllowCredentials());
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .SetIsOriginAllowed(origin => true)
+                .AllowCredentials());
 
         app.UseAuthentication();
 

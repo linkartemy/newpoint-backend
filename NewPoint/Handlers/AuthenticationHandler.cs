@@ -43,7 +43,9 @@ public static class AuthenticationHandler
     }
 
     public static bool IsTokenExpired(string token)
-        => DateTime.Now >= new JwtSecurityTokenHandler().ReadJwtToken(token).ValidTo;
+    {
+        return DateTime.Now >= new JwtSecurityTokenHandler().ReadJwtToken(token).ValidTo;
+    }
 
     public static int GetIdFromToken(string token)
     {

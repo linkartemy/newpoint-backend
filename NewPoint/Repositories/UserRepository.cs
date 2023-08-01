@@ -142,7 +142,7 @@ internal class UserRepository : IUserRepository
             ""user""
         WHERE id=@id;
         ",
-            new { id = id });
+            new { id });
         return user;
     }
 }
@@ -156,7 +156,9 @@ public interface IUserRepository
     Task UpdateToken(long id, string token);
     Task<User?> GetUserByToken(string token);
     Task<User?> GetPostUserDataById(long id);
+
     Task<string> GetUserHashedPassword(string login);
+
     //Task EditProfile(int id, EditProfileRequest user);
     public Task<User> GetProfileById(int id);
 }
