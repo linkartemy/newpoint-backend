@@ -90,6 +90,8 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 return response;
             }
 
+            await _postRepository.SetCommentsById(request.PostId,
+                await _postRepository.GetCommentsById(request.PostId) + 1);
             await _commentRepository.Insert(request.PostId, user.Id, request.Content);
 
             response.Data = Any.Pack(new AddCommentResponse
