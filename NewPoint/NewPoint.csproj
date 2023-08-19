@@ -17,22 +17,23 @@
             <OutputDir>obj\Debug\net6.0\</OutputDir>
             <Generator>MSBuild:Compile</Generator>
         </Protobuf>
-        <Protobuf Include="Protos\response.proto" GrpcServices="Server" ProtoRoot="Protos\"/>
-        <Protobuf Include="Protos\user.proto" GrpcServices="Server" ProtoRoot="Protos\"/>
-        <Protobuf Include="Protos\post.proto" GrpcServices="Server" ProtoRoot="Protos\"/>
-        <Protobuf Include="Protos\comment.proto" GrpcServices="Server" ProtoRoot="Protos\"/>
+        <Protobuf Include="Protos\response.proto" GrpcServices="Server" ProtoRoot="Protos\" />
+        <Protobuf Include="Protos\nullable.proto" GrpcServices="Server" ProtoRoot="Protos\" />
+        <Protobuf Include="Protos\user.proto" GrpcServices="Server" ProtoRoot="Protos\" />
+        <Protobuf Include="Protos\post.proto" GrpcServices="Server" ProtoRoot="Protos\" />
+        <Protobuf Include="Protos\comment.proto" GrpcServices="Server" ProtoRoot="Protos\" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Dapper" Version="2.0.143"/>
-        <PackageReference Include="Grpc.AspNetCore" Version="2.40.0"/>
-        <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.55.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="Npgsql" Version="8.0.0-preview.4"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.8"/>
-        <PackageReference Include="Swashbukle.AspNetCore.Newtonsoft" Version="2.0.0"/>
+        <PackageReference Include="Dapper" Version="2.0.143" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.40.0" />
+        <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.55.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="Npgsql" Version="8.0.0-preview.4" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.8" />
+        <PackageReference Include="Swashbukle.AspNetCore.Newtonsoft" Version="2.0.0" />
     </ItemGroup>
 
     <ItemGroup>

@@ -20,8 +20,8 @@ internal class UserRepository : IUserRepository
     public async Task InsertUser(User user, string token)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""user"" (login, password_hash, name, surname, email, phone, date_of_birth, last_login_timestamp, ip, token, registration_timestamp)
-        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @dateOfBirth, @lastLoginTimestamp, @ip, @token, now())
+        INSERT INTO ""user"" (login, password_hash, name, surname, email, phone, birth_date, last_login_timestamp, ip, token, registration_timestamp)
+        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @birthDate, @lastLoginTimestamp, @ip, @token, now())
         RETURNING id;
         ",
             new
@@ -32,7 +32,7 @@ internal class UserRepository : IUserRepository
                 surname = user.Surname,
                 email = user.Email,
                 phone = user.Phone,
-                dateOfBirth = user.BirthDate,
+                birthDate = user.BirthDate,
                 lastLoginTimestamp = user.LastLoginTimestamp,
                 ip = user.IP,
                 token
@@ -135,15 +135,26 @@ internal class UserRepository : IUserRepository
     //         });
     // }
 
-    public async Task<User> GetProfileById(int id)
+    public async Task<User?> GetProfileById(long id)
     {
-        var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
-        SELECT * FROM
-            ""user""
+        var profile = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
+        SELECT
+            login AS Login,
+            name AS Name,
+            surname AS Surname,
+            profile_image AS ProfileImage,
+            header_image AS HeaderImage,
+            description AS Description,
+            location AS Location,
+            email as Email,
+            phone as Phone,
+            birth_date as BirthDate,
+            registration_timestamp as RegistrationTimestamp
+        FROM ""user""
         WHERE id=@id;
         ",
             new { id });
-        return user;
+        return profile;
     }
 }
 
@@ -160,5 +171,5 @@ public interface IUserRepository
     Task<string> GetUserHashedPassword(string login);
 
     //Task EditProfile(int id, EditProfileRequest user);
-    public Task<User> GetProfileById(int id);
+    public Task<User?> GetProfileById(long id);
 }
