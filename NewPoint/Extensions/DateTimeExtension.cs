@@ -1,6 +1,13 @@
-﻿namespace NewPoint.Handlers;
+﻿using Google.Protobuf.WellKnownTypes;
 
-public class DateTimeExtension
+namespace NewPoint.Extensions;
+
+public static class DateTimeExtension
 {
-    
+    public static NullableTimestamp ToNullableTimestamp(this Timestamp? data)
+    {
+        return data is null
+            ? new NullableTimestamp { Null = new NullValue() }
+            : new NullableTimestamp { Data = data };
+    }
 }
