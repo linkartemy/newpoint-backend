@@ -18,8 +18,9 @@ public static class DateTimeHandler
         }
     }
 
-    public static DateTime TimestampToDateTime(Timestamp timestamp)
+    public static DateTime? TimestampToDateTime(Timestamp? timestamp)
     {
+        if (timestamp is null) return null;
         return timestamp.ToDateTime();
     }
 
@@ -37,7 +38,7 @@ public static class DateTimeHandler
         }
     }
 
-    public static Timestamp TimestampToDateTime(DateTime dateTime)
+    public static Timestamp DateTimeToTimestamp(DateTime dateTime)
     {
         return dateTime.ToUniversalTime().ToTimestamp();
     }
