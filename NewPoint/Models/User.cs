@@ -14,18 +14,24 @@ public class User
 
     [JsonProperty("surname")] public string Surname { get; set; } = string.Empty;
 
-    [JsonProperty("image")] public string Image { get; set; } = string.Empty;
+    [JsonProperty("description")] public string? Description { get; set; }
+    
+    [JsonProperty("location")] public string? Location { get; set; }
 
-    [JsonProperty("email")] public string Email { get; set; } = string.Empty;
+    [JsonProperty("email")] public string? Email { get; set; }
 
-    [JsonProperty("phone")] public string Phone { get; set; } = string.Empty;
+    [JsonProperty("phone")] public string? Phone { get; set; }
+    
+    [JsonProperty("profileImage")] public string? ProfileImage { get; set; }
+    
+    [JsonProperty("headerImage")] public string? HeaderImage { get; set; }
 
     [JsonProperty("birthDate")] public DateTime BirthDate { get; set; }
 
-    [JsonProperty("lastLoginTimestamp")] public DateTime LastLoginTimestamp { get; set; }
-
-    [JsonProperty("ip")] public string IP { get; set; } = string.Empty;
-
     [JsonProperty("registrationTimestamp")]
     public DateTime RegistrationTimestamp { get; set; }
+    
+    [JsonProperty("lastLoginTimestamp")] public DateTime LastLoginTimestamp { get; set; }
+
+    [JsonProperty("ip")] public string? IP { get; set; }
 }

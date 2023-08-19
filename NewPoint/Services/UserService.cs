@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using NewPoint.Extensions;
 using NewPoint.Handlers;
 using NewPoint.Models;
 using NewPoint.Repositories;
@@ -55,14 +56,8 @@ public class UserService : GrpcUser.GrpcUserBase
             }
 
             context.GetHttpContext().Response.Headers.Add("Authorization", token);
-            var data = new UserModel
-            {
-                Id = user.Id, Login = user.Login, Email = user.Email, Image = user.Image, Ip = user.IP,
-                Phone = user.Phone, LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp),
-                RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp),
-                BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate)
-            };
-            response.Data = Any.Pack(data);
+
+            response.Data = Any.Pack(user.ToUserModel());
             return response;
         }
         catch (Exception)
@@ -173,14 +168,7 @@ public class UserService : GrpcUser.GrpcUserBase
 
             response.Data = Any.Pack(new RegisterResponse
             {
-                User = new UserModel
-                {
-                    Id = user.Id, Login = user.Login, Email = user.Email, Image = user.Image, Ip = user.IP,
-                    Phone = user.Phone,
-                    LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp),
-                    RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp),
-                    BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate)
-                }
+                User = user.ToUserModel()
             });
 
             return response;
@@ -213,15 +201,39 @@ public class UserService : GrpcUser.GrpcUserBase
 
             response.Data = Any.Pack(new GetUserByTokenResponse
             {
-                User = new UserModel
-                {
-                    Id = user.Id, Name = user.Name, Surname = user.Surname, Login = user.Login, Email = user.Email,
-                    Image = user.Image, Ip = user.IP,
-                    Phone = user.Phone,
-                    LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp),
-                    RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp),
-                    BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate)
-                }
+                User = user.ToUserModel()
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+    
+    public override async Task<Response> GetProfileById(GetProfileByIdRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var user = await _userRepository.GetProfileById(request.Id);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            response.Data = Any.Pack(new GetProfileByIdResponse
+            {
+                User = user.ToUserModel()
             });
 
             return response;
