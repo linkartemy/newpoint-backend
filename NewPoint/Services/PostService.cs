@@ -1,6 +1,8 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using NewPoint.Extensions;
 using NewPoint.Handlers;
+using NewPoint.Models;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
@@ -47,19 +49,56 @@ public class PostService : GrpcPost.GrpcPostBase
                     post.Liked =
                         await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
 
-                    var postModel = new PostModel
-                    {
-                        Id = post.Id, Login = post.Login, Name = post.Name, Surname = post.Surname,
-                        Content = post.Content,
-                        Images = post.Images, Likes = post.Likes, Shares = post.Shares, Comments = post.Comments,
-                        Liked = post.Liked,
-                        CreationTimestamp = DateTimeHandler.TimestampToDateTime(post.CreationTimestamp)
-                    };
-
-                    return postModel;
+                    return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
 
             response.Data = Any.Pack(new GetPostsResponse { Posts = { posts } });
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetPostsByUserId(GetPostsByUserIdRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var user = await _userRepository.GetPostUserDataById(request.UserId);
+            if (user is null)
+            {
+                user = new User
+                {
+                    Login = "Unknown",
+                    Name = "Unknown",
+                    Surname = ""
+                };
+            }
+
+            var posts = (await _postRepository.GetPostsByAuthorId(request.UserId))
+                .OrderByDescending(post => post.CreationTimestamp).Select(
+                    async post =>
+                    {
+                        post.Login = user.Login;
+                        post.Name = user.Name;
+                        post.Surname = user.Surname;
+
+                        var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                        post.Liked =
+                            await _postRepository.IsLikedByUser(post.Id,
+                                (await _userRepository.GetUserByToken(token)).Id);
+
+                        return post.ToPostModel();
+                    }).Select(post => post.Result).ToList();
+
+            response.Data = Any.Pack(new GetPostsByUserIdResponse { Posts = { posts } });
             return response;
         }
         catch (Exception)
@@ -97,16 +136,7 @@ public class PostService : GrpcPost.GrpcPostBase
             var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
             post.Liked = await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
 
-            var postModel = new PostModel
-            {
-                Id = post.Id, Login = post.Login, Name = post.Name, Surname = post.Surname,
-                Content = post.Content,
-                Images = post.Images, Likes = post.Likes, Shares = post.Shares, Comments = post.Comments,
-                Liked = post.Liked,
-                CreationTimestamp = DateTimeHandler.TimestampToDateTime(post.CreationTimestamp)
-            };
-
-            response.Data = Any.Pack(new GetPostByIdResponse { Post = postModel });
+            response.Data = Any.Pack(new GetPostByIdResponse { Post = post.ToPostModel() });
 
             return response;
         }

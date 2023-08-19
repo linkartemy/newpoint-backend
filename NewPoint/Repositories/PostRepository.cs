@@ -10,7 +10,7 @@ public class PostRepository : IPostRepository
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
         SELECT 
-            id AS id,
+            id AS Id,
             author_id AS AuthorId,
             content AS Content,
             images AS Images,
@@ -22,12 +22,31 @@ public class PostRepository : IPostRepository
         ");
         return reader;
     }
+    
+    public async Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId)
+    {
+        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
+        SELECT 
+            id AS Id,
+            author_id AS AuthorId,
+            content AS Content,
+            images AS Images,
+            likes AS Likes,
+            shares AS Shares,
+            comments AS Comments,
+            creation_timestamp as CreationTimestamp
+        FROM ""post""
+        WHERE author_id=@authorId;
+        ",
+            new { authorId });
+        return reader;
+    }
 
     public async Task<Post> GetPost(long postId)
     {
         var post = await DatabaseHandler.Connection.QueryFirstAsync<Post>(@"
         SELECT 
-            id AS id,
+            id AS Id,
             author_id AS AuthorId,
             content AS Content,
             images AS Images,
@@ -154,6 +173,7 @@ public class PostRepository : IPostRepository
 public interface IPostRepository
 {
     Task<IEnumerable<Post>> GetPosts();
+    Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId);
     Task<Post> GetPost(long postId);
     Task<bool> IsLikedByUser(long postId, long userId);
     Task<int> GetLikesById(long postId);
