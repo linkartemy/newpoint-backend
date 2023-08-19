@@ -55,9 +55,9 @@ public class CommentService : GrpcComment.GrpcCommentBase
 
                         return new CommentModel
                         {
-                            Id = comment.Id, Login = comment.Login, Name = comment.Name, Surname = comment.Surname,
+                            Id = comment.Id, UserId = comment.UserId, Login = comment.Login, Name = comment.Name, Surname = comment.Surname,
                             Content = comment.Content, Likes = comment.Likes, Liked = comment.Liked,
-                            CreationTimestamp = DateTimeHandler.TimestampToDateTime(comment.CreationTimestamp)
+                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
                         };
                         ;
                     }).Select(comment => comment.Result).ToList();
@@ -84,7 +84,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
             var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
             var user = await _userRepository.GetUserByToken(token);
             if (user == null)
-            {
+            {    
                 response.Error = "User doesn't exist. Server error. Please contact with us";
                 response.Status = 400;
                 return response;
