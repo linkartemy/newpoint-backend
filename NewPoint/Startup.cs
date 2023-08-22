@@ -90,7 +90,7 @@ public class Startup
 
         AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
 
-        services.Configure<SMTPConfiguration>(Configuration.GetSection(nameof(SMTPConfiguration)));
+        SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -155,6 +155,7 @@ public class Startup
             endpoints.MapGrpcService<UserService>();
             endpoints.MapGrpcService<PostService>();
             endpoints.MapGrpcService<CommentService>();
+            endpoints.MapGrpcService<CodeService>();
             endpoints.MapGrpcReflectionService();
             endpoints.MapControllers();
         });

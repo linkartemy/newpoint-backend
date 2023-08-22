@@ -245,4 +245,100 @@ public class UserService : GrpcUser.GrpcUserBase
             return response;
         }
     }
+    
+    public override async Task<Response> ValidateUser(ValidateUserRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var login = request.Login.Trim();
+
+            if (login.Length < 4)
+            {
+                response.Error = "Username must be at least 4 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            if (login.Length > 32)
+            {
+                response.Error = "Username's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var password = request.Password.Trim();
+
+            if (password.Length < 8)
+            {
+                response.Error = "Password's length must be at least 8 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            if (password.Length > 32)
+            {
+                response.Error = "Password's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var hasNumber = new Regex(@"[0-9]+");
+            var hasUpperChar = new Regex(@"[A-Z]+");
+
+            if (!hasNumber.IsMatch(password))
+            {
+                response.Error = "Password must contain at least 1 digit";
+                response.Status = 400;
+                return response;
+            }
+
+            if (!hasUpperChar.IsMatch(password))
+            {
+                response.Error = "Password must contain at least 1 capital letter";
+                response.Status = 400;
+                return response;
+            }
+
+            if (password.Length > 32)
+            {
+                response.Error = "Password's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var email = request.Email.Trim();
+            var phone = request.Phone.Trim();
+
+            if (email.Length == 0 && phone.Length == 0)
+            {
+                response.Error = "You must provide either email or phone number";
+                response.Status = 400;
+                return response;
+            }
+
+            if (await _userRepository.LoginExists(login))
+            {
+                response.Error = "User with this name already exists";
+                response.Status = 400;
+                return response;
+            }
+
+            response.Data = Any.Pack(new ValidateUserResponse
+            {
+                Valid = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
 }
