@@ -24,6 +24,8 @@ public class CodeRepository : ICodeRepository
         {
             RemoveCode(source, args, _count);
             _timers.Remove(timer);
+            timer.Close();
+            timer.Dispose();
         };
         timer.Start();
         _timers.Add(timer);
