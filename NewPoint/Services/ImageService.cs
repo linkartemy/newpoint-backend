@@ -41,8 +41,33 @@ public class ImageService : GrpcImage.GrpcImageBase
             {
                 Image = new ImageModel
                 {
-                    Image = ByteString.CopyFrom(image)
+                    Id = request.Id,
+                    Data = ByteString.CopyFrom(image)
                 }
+            });
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
+    }
+
+    public override async Task<Response> AddImage(AddImageRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var id = await _imageRepository.InsertImage(request.Data.ToByteArray());
+
+            response.Data = Any.Pack(new AddImageResponse
+            {
+                Id = id
             });
             return response;
         }

@@ -15,7 +15,9 @@ public class CommentRepository : ICommentRepository
         ",
             new
             {
-                postId, userId, content
+                postId,
+                userId,
+                content
             });
         return id;
     }
@@ -82,7 +84,8 @@ public class CommentRepository : ICommentRepository
         ",
             new
             {
-                commentId, userId
+                commentId,
+                userId
             });
         return likeId;
     }
@@ -95,7 +98,8 @@ public class CommentRepository : ICommentRepository
         ",
             new
             {
-                commentId, userId
+                commentId,
+                userId
             });
     }
 }
