@@ -17,29 +17,6 @@ internal class ImageRepository : IImageRepository
         return counter != 0;
     }
 
-    public async Task InsertUser(User user, string token)
-    {
-        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""user"" (login, password_hash, name, surname, email, phone, birth_date, last_login_timestamp, ip, token, registration_timestamp)
-        VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @birthDate, @lastLoginTimestamp, @ip, @token, now())
-        RETURNING id;
-        ",
-            new
-            {
-                login = user.Login,
-                passwordHash = user.HashedPassword,
-                name = user.Name,
-                surname = user.Surname,
-                email = user.Email,
-                phone = user.Phone,
-                birthDate = user.BirthDate,
-                lastLoginTimestamp = user.LastLoginTimestamp,
-                ip = user.IP,
-                token
-            });
-        user.Id = id;
-    }
-
     public async Task<byte[]> GetImageById(long id)
     {
         var data = await DatabaseHandler.Connection.QueryFirstAsync<byte[]>(@"
@@ -51,6 +28,20 @@ internal class ImageRepository : IImageRepository
             new { id });
 
         return data;
+    }
+
+    public async Task<long> InsertImage(byte[] image)
+    {
+        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
+        INSERT INTO ""image"" (data)
+        VALUES (@data)
+        RETURNING id;
+        ",
+            new
+            {
+                data = image,
+            });
+        return id;
     }
 
     public async Task<string> GetTokenById(long id)
@@ -162,4 +153,5 @@ public interface IImageRepository
 {
     Task<bool> ImageExists(long id);
     Task<byte[]> GetImageById(long id);
+    Task<long> InsertImage(byte[] image);
 }

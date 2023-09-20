@@ -50,6 +50,8 @@ public class Startup
         services.AddSingleton<ICodeRepository, CodeRepository>();
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<ICommentRepository, CommentRepository>();
+        // services.AddSingleton<ICommentService, CommentService>();
+        services.AddSingleton<IImageRepository, ImageRepository>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>
