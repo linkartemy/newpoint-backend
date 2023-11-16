@@ -23,6 +23,7 @@ public class Post
     [JsonProperty("shares")] public int Shares { get; set; }
 
     [JsonProperty("comments")] public int Comments { get; set; }
+    [JsonProperty("views")] public int Views { get; set; }
 
     [JsonProperty("liked")] public bool Liked { get; set; }
 

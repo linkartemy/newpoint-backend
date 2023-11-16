@@ -9,9 +9,18 @@ public static class PostExtension
     {
         return new PostModel
         {
-            Id = post.Id, AuthorId = post.AuthorId, Login = post.Login, Name = post.Name,
-            Surname = post.Surname, Content = post.Content, Images = post.Images,
-            Likes = post.Likes, Shares = post.Shares, Comments = post.Comments, Liked = post.Liked,
+            Id = post.Id,
+            AuthorId = post.AuthorId,
+            Login = post.Login,
+            Name = post.Name,
+            Surname = post.Surname,
+            Content = post.Content,
+            Images = post.Images,
+            Likes = post.Likes,
+            Shares = post.Shares,
+            Comments = post.Comments,
+            Views = post.Views,
+            Liked = post.Liked,
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
         };
     }
