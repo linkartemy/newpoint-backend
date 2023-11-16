@@ -17,12 +17,13 @@ public class PostRepository : IPostRepository
             likes AS Likes,
             shares AS Shares,
             comments AS Comments,
+            views AS Views,
             creation_timestamp as CreationTimestamp
         FROM ""post"";
         ");
         return reader;
     }
-    
+
     public async Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId)
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
@@ -34,6 +35,7 @@ public class PostRepository : IPostRepository
             likes AS Likes,
             shares AS Shares,
             comments AS Comments,
+            views AS Views,
             creation_timestamp as CreationTimestamp
         FROM ""post""
         WHERE author_id=@authorId;
@@ -53,6 +55,7 @@ public class PostRepository : IPostRepository
             likes AS Likes,
             shares AS Shares,
             comments AS Comments,
+            views AS Views,
             creation_timestamp as CreationTimestamp
         FROM ""post""
         WHERE id=@postId;
@@ -106,7 +109,8 @@ public class PostRepository : IPostRepository
         ",
             new
             {
-                postId, userId
+                postId,
+                userId
             });
         return likeId;
     }
@@ -119,7 +123,8 @@ public class PostRepository : IPostRepository
         ",
             new
             {
-                postId, userId
+                postId,
+                userId
             });
     }
 
@@ -168,6 +173,29 @@ public class PostRepository : IPostRepository
         ",
             new { postId, comments });
     }
+
+    public async Task<int> GetPostViewsById(long postId)
+    {
+        var views = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
+        SELECT
+            views
+        FROM ""post""
+        WHERE id=@postId;
+        ",
+            new { postId });
+        return views;
+    }
+
+    public async Task SetPostViewsById(long postId, int views)
+    {
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        UPDATE
+            ""post""
+        SET views=@views
+        WHERE id=@postId;
+        ",
+            new { postId, views });
+    }
 }
 
 public interface IPostRepository
@@ -184,4 +212,6 @@ public interface IPostRepository
     Task SetSharesById(long postId, int shares);
     Task<int> GetCommentsById(long postId);
     Task SetCommentsById(long postId, int comments);
+    Task<int> GetPostViewsById(long postId);
+    Task SetPostViewsById(long postId, int views);
 }

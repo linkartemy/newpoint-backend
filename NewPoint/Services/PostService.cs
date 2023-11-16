@@ -252,4 +252,41 @@ public class PostService : GrpcPost.GrpcPostBase
             return response;
         }
     }
+
+    public override async Task<Response> AddPostView(AddPostViewRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            var views = await _postRepository.GetPostViewsById(request.PostId) + 1;
+
+            await _postRepository.SetPostViewsById(request.PostId,
+                views);
+
+            response.Data = Any.Pack(new AddPostViewResponse
+            {
+                Views = views
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
 }
