@@ -13,10 +13,12 @@ public class ImageService : GrpcImage.GrpcImageBase
 {
     private readonly ILogger<ImageService> _logger;
     private readonly IImageRepository _imageRepository;
+    private readonly IObjectRepository _objectRepository;
 
-    public ImageService(IImageRepository imageRepository, ILogger<ImageService> logger)
+    public ImageService(IImageRepository imageRepository,IObjectRepository objectRepository, ILogger<ImageService> logger)
     {
         _imageRepository = imageRepository;
+        _objectRepository = objectRepository;
         _logger = logger;
     }
 
@@ -64,6 +66,7 @@ public class ImageService : GrpcImage.GrpcImageBase
         try
         {
             var id = await _imageRepository.InsertImage(request.Data.ToByteArray());
+            await _objectRepository.InsertObject(request.Data.ToByteArray(), "1.jpg", "1.jpg", "image/jpeg");
 
             response.Data = Any.Pack(new AddImageResponse
             {

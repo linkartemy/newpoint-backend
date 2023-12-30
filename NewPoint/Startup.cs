@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Minio;
 using NewPoint.Configurations;
 using NewPoint.Handlers;
 using NewPoint.Repositories;
@@ -52,6 +53,7 @@ public class Startup
         services.AddSingleton<ICommentRepository, CommentRepository>();
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<IImageRepository, ImageRepository>();
+        services.AddSingleton<IObjectRepository, ObjectRepository>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>
@@ -93,6 +95,12 @@ public class Startup
         AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
 
         SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
+        
+        S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
+        
+        services.AddMinio(configureClient => configureClient
+            .WithEndpoint(S3Handler.Configuration.EntryPoint)
+            .WithCredentials(S3Handler.Configuration.AccessKey, S3Handler.Configuration.SecretKey));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -158,6 +166,7 @@ public class Startup
             endpoints.MapGrpcService<PostService>();
             endpoints.MapGrpcService<CommentService>();
             endpoints.MapGrpcService<CodeService>();
+            endpoints.MapGrpcService<ImageService>();
             endpoints.MapGrpcReflectionService();
             endpoints.MapControllers();
         });
