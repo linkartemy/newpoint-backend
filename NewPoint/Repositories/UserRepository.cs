@@ -94,7 +94,7 @@ internal class UserRepository : IUserRepository
     {
         var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
         SELECT
-            login, name, surname
+            login, name, surname, profile_image_id AS ProfileImageId
         FROM ""user""
         WHERE id=@id;
         ",
@@ -105,7 +105,7 @@ internal class UserRepository : IUserRepository
 
     public async Task<string> GetUserHashedPassword(string login)
     {
-        var hashedPassword = DatabaseHandler.Connection.QueryFirst<string>(@"
+        var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
         SELECT
             password_hash
         FROM ""user""
@@ -116,24 +116,25 @@ internal class UserRepository : IUserRepository
         return hashedPassword;
     }
 
-    // public async Task EditProfile(int id, EditProfileRequest user)
-    // {
-    //     await DatabaseHandler.Connection.ExecuteAsync(@"
-    //     UPDATE
-    //         ""user""
-    //     SET name=@name,
-    //         surname=@surname,
-    //         description=@description,
-    //         birthdate=@birthdate,
-    //         location=@location
-    //     WHERE id=@id;
-    //     ",
-    //         new
-    //         {
-    //             id = id, name = user.Name, surname = user.Surname, description = user.Description,
-    //             birthdate = user.BirthDate, location = user.Location
-    //         });
-    // }
+    public async Task UpdateProfile(long id, User user)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET name=@name,
+            surname=@surname,
+            description=@description,
+            location=@location,
+            profile_image_id=@profileImageId,
+            header_image_id=@headerImageId
+        WHERE id=@id;
+        ",
+            new
+            {
+                id = id, name = user.Name, surname = user.Surname, description = user.Description,
+                location = user.Location, profileImageId = user.ProfileImageId, headerImageId = user.HeaderImageId
+            });
+    }
 
     public async Task<User?> GetProfileById(long id)
     {
@@ -142,8 +143,8 @@ internal class UserRepository : IUserRepository
             login AS Login,
             name AS Name,
             surname AS Surname,
-            profile_image AS ProfileImage,
-            header_image AS HeaderImage,
+            profile_image_id AS ProfileImageId,
+            header_image_id AS HeaderImageId,
             description AS Description,
             location AS Location,
             email as Email,
@@ -170,6 +171,6 @@ public interface IUserRepository
 
     Task<string> GetUserHashedPassword(string login);
 
-    //Task EditProfile(int id, EditProfileRequest user);
+    Task UpdateProfile(long id, User user);
     public Task<User?> GetProfileById(long id);
 }

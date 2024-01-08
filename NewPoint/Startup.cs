@@ -95,11 +95,12 @@ public class Startup
         AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
 
         SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
-        
+
         S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
-        
+
         services.AddMinio(configureClient => configureClient
-            .WithEndpoint(S3Handler.Configuration.EntryPoint)
+            .WithEndpoint(S3Handler.Configuration.Endpoint)
+            .WithSSL(false)
             .WithCredentials(S3Handler.Configuration.AccessKey, S3Handler.Configuration.SecretKey));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -15,7 +15,8 @@ public class ImageService : GrpcImage.GrpcImageBase
     private readonly IImageRepository _imageRepository;
     private readonly IObjectRepository _objectRepository;
 
-    public ImageService(IImageRepository imageRepository,IObjectRepository objectRepository, ILogger<ImageService> logger)
+    public ImageService(IImageRepository imageRepository, IObjectRepository objectRepository,
+        ILogger<ImageService> logger)
     {
         _imageRepository = imageRepository;
         _objectRepository = objectRepository;
@@ -37,7 +38,8 @@ public class ImageService : GrpcImage.GrpcImageBase
                 return response;
             }
 
-            var image = await _imageRepository.GetImageById(request.Id);
+            var name = await _imageRepository.GetImageNameById(request.Id);
+            var image = await _objectRepository.GetObjectByName(name);
 
             response.Data = Any.Pack(new GetImageByIdResponse
             {
@@ -46,31 +48,6 @@ public class ImageService : GrpcImage.GrpcImageBase
                     Id = request.Id,
                     Data = ByteString.CopyFrom(image)
                 }
-            });
-            return response;
-        }
-        catch (Exception)
-        {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
-        }
-    }
-
-    public override async Task<Response> AddImage(AddImageRequest request, ServerCallContext context)
-    {
-        var response = new Response
-        {
-            Status = 200
-        };
-        try
-        {
-            var id = await _imageRepository.InsertImage(request.Data.ToByteArray());
-            await _objectRepository.InsertObject(request.Data.ToByteArray(), "1.jpg", "1.jpg", "image/jpeg");
-
-            response.Data = Any.Pack(new AddImageResponse
-            {
-                Id = id
             });
             return response;
         }

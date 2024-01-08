@@ -13,6 +13,7 @@ public class Post
     [JsonProperty("name")] public string Name { get; set; }
 
     [JsonProperty("surname")] public string Surname { get; set; }
+    [JsonProperty("profile_image_id")] public long ProfileImageId { get; set; }
 
     [JsonProperty("content")] public string Content { get; set; }
 

@@ -43,6 +43,7 @@ public class PostService : GrpcPost.GrpcPostBase
                         post.Login = user.Login;
                         post.Name = user.Name;
                         post.Surname = user.Surname;
+                        post.ProfileImageId = user.ProfileImageId;
                     }
 
                     var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
@@ -89,6 +90,7 @@ public class PostService : GrpcPost.GrpcPostBase
                         post.Login = user.Login;
                         post.Name = user.Name;
                         post.Surname = user.Surname;
+                        post.ProfileImageId = user.ProfileImageId;
 
                         var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
                         post.Liked =
@@ -131,6 +133,7 @@ public class PostService : GrpcPost.GrpcPostBase
                 post.Login = user.Login;
                 post.Name = user.Name;
                 post.Surname = user.Surname;
+                post.ProfileImageId = user.ProfileImageId;
             }
 
             var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];

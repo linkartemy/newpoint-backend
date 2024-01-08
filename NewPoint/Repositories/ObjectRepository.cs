@@ -1,5 +1,7 @@
-﻿using Minio;
+﻿using Microsoft.AspNetCore.StaticFiles;
+using Minio;
 using Minio.DataModel.Args;
+using Minio.Exceptions;
 using NewPoint.Handlers;
 
 namespace NewPoint.Repositories;
@@ -34,12 +36,30 @@ public class ObjectRepository : IObjectRepository
         }
     }
 
-    public Task<byte[]> GetObjectById(long id)
+    public async Task<byte[]> GetObjectByName(string name)
     {
-        throw new NotImplementedException();
+        var beArgs = new BucketExistsArgs()
+            .WithBucket(S3Handler.Configuration.UserImagesBucket);
+        var found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
+        if (!found)
+        {
+            throw new BucketNotFoundException(
+                $"No bucket with name {S3Handler.Configuration.UserImagesBucket} was found");
+        }
+
+        byte[] data = {};
+        var getObjectArgs = new GetObjectArgs()
+            .WithBucket(S3Handler.Configuration.UserImagesBucket)
+            .WithObject(name)
+            .WithFile(name).WithCallbackStream((stream) =>
+            {
+                data = StreamHandler.StreamToBytes(stream);
+            });
+        await _minioClient.GetObjectAsync(getObjectArgs).ConfigureAwait(false);
+        return data;
     }
 
-    public async Task<string> InsertObject(byte[] obj, string objectName, string filePath, string contentType)
+    public async Task<string> InsertObject(byte[] data, string objectName)
     {
         var beArgs = new BucketExistsArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket);
@@ -50,7 +70,18 @@ public class ObjectRepository : IObjectRepository
                 .WithBucket(S3Handler.Configuration.UserImagesBucket);
             await _minioClient.MakeBucketAsync(mbArgs).ConfigureAwait(false);
         }
-        // Upload a file to bucket.
+
+        var filePath = $"./{objectName}";
+        if (!File.Exists(filePath))
+        {
+            File.Create(filePath);
+        }
+
+        await File.WriteAllBytesAsync(filePath, data);
+
+        var contentType = "image/jpeg";
+        new FileExtensionContentTypeProvider().TryGetContentType(filePath, out contentType);
+
         var putObjectArgs = new PutObjectArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket)
             .WithObject(objectName)
@@ -64,6 +95,6 @@ public class ObjectRepository : IObjectRepository
 public interface IObjectRepository
 {
     Task<bool> ObjectExists(string objectName);
-    Task<byte[]> GetObjectById(long id);
-    Task<string> InsertObject(byte[] obj, string objectName, string filePath, string contentType);
+    Task<byte[]> GetObjectByName(string name);
+    Task<string> InsertObject(byte[] data, string objectName);
 }

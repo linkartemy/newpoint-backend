@@ -12,10 +12,15 @@ public class UserService : GrpcUser.GrpcUserBase
 {
     private readonly ILogger<UserService> _logger;
     private readonly IUserRepository _userRepository;
+    private readonly IImageRepository _imageRepository;
+    private readonly IObjectRepository _objectRepository;
 
-    public UserService(IUserRepository userRepository, ILogger<UserService> logger)
+    public UserService(IUserRepository userRepository, IImageRepository imageRepository,
+        IObjectRepository objectRepository, ILogger<UserService> logger)
     {
         _userRepository = userRepository;
+        _imageRepository = imageRepository;
+        _objectRepository = objectRepository;
         _logger = logger;
     }
 
@@ -213,7 +218,7 @@ public class UserService : GrpcUser.GrpcUserBase
             return response;
         }
     }
-    
+
     public override async Task<Response> GetProfileById(GetProfileByIdRequest request, ServerCallContext context)
     {
         var response = new Response
@@ -245,7 +250,7 @@ public class UserService : GrpcUser.GrpcUserBase
             return response;
         }
     }
-    
+
     public override async Task<Response> ValidateUser(ValidateUserRequest request, ServerCallContext context)
     {
         var response = new Response
@@ -330,6 +335,102 @@ public class UserService : GrpcUser.GrpcUserBase
             response.Data = Any.Pack(new ValidateUserResponse
             {
                 Valid = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> UpdateProfile(UpdateProfileRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var name = request.Name.Trim();
+            var surname = request.Surname.Trim();
+            var description = request.Description.Trim();
+            var location = request.Location.Trim();
+
+            if (description.Length > 255)
+            {
+                response.Error = "Description's length can't be over 255 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            user.Name = name;
+            user.Surname = surname;
+            user.Description = description.Length != 0 ? description : null;
+            user.Location = location.Length != 0 ? location : null;
+
+            await _userRepository.UpdateProfile(user.Id, user);
+
+            response.Data = Any.Pack(new UpdateProfileResponse
+            {
+                User = user.ToUserModel()
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> UpdateProfileImage(UpdateProfileImageRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var data = request.Data;
+            var name = request.Name.Trim();
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _objectRepository.InsertObject(request.Data.ToByteArray(), name);
+            var id = await _imageRepository.InsertImage(name);
+
+            user.ProfileImageId = id;
+
+            await _userRepository.UpdateProfile(user.Id, user);
+
+            response.Data = Any.Pack(new UpdateProfileImageResponse
+            {
+                Id = id
             });
 
             return response;

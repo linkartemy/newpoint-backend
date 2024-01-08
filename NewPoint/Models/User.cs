@@ -22,9 +22,9 @@ public class User
 
     [JsonProperty("phone")] public string? Phone { get; set; }
     
-    [JsonProperty("profileImage")] public string? ProfileImage { get; set; }
+    [JsonProperty("profileImageId")] public long ProfileImageId { get; set; }
     
-    [JsonProperty("headerImage")] public string? HeaderImage { get; set; }
+    [JsonProperty("headerImageId")] public long HeaderImageId { get; set; }
 
     [JsonProperty("birthDate")] public DateTime BirthDate { get; set; }
 
