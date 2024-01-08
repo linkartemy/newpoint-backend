@@ -1,8 +1,7 @@
 using Dapper;
-using NewPoint.Handlers;
-using NewPoint.Models;
+using NewPointStorage.Handlers;
 
-namespace NewPoint.Repositories;
+namespace NewPointStorage.Repositories;
 
 internal class ImageRepository : IImageRepository
 {
@@ -16,28 +15,30 @@ internal class ImageRepository : IImageRepository
 
         return counter != 0;
     }
-    
-    public async Task<string> GetImageNameById(long id)
+
+    public async Task<string> GetImageHashById(long id)
     {
-        var name = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
-        SELECT name FROM ""image""
+        var hash = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
+        SELECT
+            hash
+        FROM ""image""
         WHERE id=@id;
         ",
             new { id });
 
-        return name;
+        return hash;
     }
 
-    public async Task<long> InsertImage(string name)
+    public async Task<long> InsertImage(string hash)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""image"" (name)
-        VALUES (@name)
+        INSERT INTO ""image"" (hash)
+        VALUES (@hash)
         RETURNING id;
         ",
             new
             {
-                name = name
+                hash,
             });
         return id;
     }
@@ -46,6 +47,6 @@ internal class ImageRepository : IImageRepository
 public interface IImageRepository
 {
     Task<bool> ImageExists(long id);
-    Task<string> GetImageNameById(long id);
-    Task<long> InsertImage(string name);
+    Task<string> GetImageHashById(long id);
+    Task<long> InsertImage(string hash);
 }

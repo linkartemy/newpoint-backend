@@ -13,8 +13,8 @@ public static class UserExtension
             Email = user.Email.ToNullableString(),
             Description = user.Description.ToNullableString(),
             Location = user.Location.ToNullableString(),
-            ProfileImage = user.ProfileImage.ToNullableString(),
-            HeaderImage = user.HeaderImage.ToNullableString(), Ip = user.IP.ToNullableString(), Phone = user.Phone.ToNullableString(),
+            ProfileImageId = user.ProfileImageId,
+            HeaderImageId = user.HeaderImageId, Ip = user.IP.ToNullableString(), Phone = user.Phone.ToNullableString(),
             LastLoginTimestamp = DateTimeHandler.DateTimeToTimestamp(user.LastLoginTimestamp).ToNullableTimestamp(),
             RegistrationTimestamp = DateTimeHandler.DateTimeToTimestamp(user.RegistrationTimestamp).ToNullableTimestamp(),
             BirthDate = DateTimeHandler.DateTimeToTimestamp(user.BirthDate.AddHours(10)).ToNullableTimestamp()

@@ -1,17 +1,16 @@
-﻿using System.Text;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Minio;
-using NewPoint.Configurations;
-using NewPoint.Handlers;
-using NewPoint.Repositories;
-using NewPoint.Services;
+using NewPointStorage.Configurations;
+using NewPointStorage.Handlers;
+using NewPointStorage.Repositories;
+using NewPointStorage.Services;
 using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace NewPoint;
+namespace NewPointStorage;
 
 public class Startup
 {
@@ -43,17 +42,7 @@ public class Startup
                 });
         });
 
-        // services.AddSingleton<IUserService, UserService>();
-        services.AddSingleton<IUserRepository, UserRepository>();
-        // services.AddSingleton<IPostService, PostService>();
-        services.AddSingleton<IPostRepository, PostRepository>();
-        // services.AddSingleton<ICodeService, CodeService>();
-        services.AddSingleton<ICodeRepository, CodeRepository>();
-        // services.AddSingleton<ICommentService, CommentService>();
-        services.AddSingleton<ICommentRepository, CommentRepository>();
-        // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<IImageRepository, ImageRepository>();
-        services.AddSingleton<IObjectRepository, ObjectRepository>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>
@@ -93,15 +82,6 @@ public class Startup
         DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
 
         AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
-
-        SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
-
-        S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
-
-        services.AddMinio(configureClient => configureClient
-            .WithEndpoint(S3Handler.Configuration.Endpoint)
-            .WithSSL(false)
-            .WithCredentials(S3Handler.Configuration.AccessKey, S3Handler.Configuration.SecretKey));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -163,10 +143,6 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapGrpcService<UserService>();
-            endpoints.MapGrpcService<PostService>();
-            endpoints.MapGrpcService<CommentService>();
-            endpoints.MapGrpcService<CodeService>();
             endpoints.MapGrpcService<ImageService>();
             endpoints.MapGrpcReflectionService();
             endpoints.MapControllers();

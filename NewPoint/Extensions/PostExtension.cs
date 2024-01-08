@@ -14,6 +14,7 @@ public static class PostExtension
             Login = post.Login,
             Name = post.Name,
             Surname = post.Surname,
+            ProfileImageId = post.ProfileImageId,
             Content = post.Content,
             Images = post.Images,
             Likes = post.Likes,
