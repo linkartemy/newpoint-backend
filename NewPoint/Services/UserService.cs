@@ -359,10 +359,18 @@ public class UserService : GrpcUser.GrpcUserBase
             var surname = request.Surname.Trim();
             var description = request.Description.Trim();
             var location = request.Location.Trim();
+            var birthDate = request.BirthDate;
 
             if (description.Length > 255)
             {
                 response.Error = "Description's length can't be over 255 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            if (birthDate == null)
+            {
+                response.Error = "Birth date can't be null";
                 response.Status = 400;
                 return response;
             }
@@ -381,6 +389,7 @@ public class UserService : GrpcUser.GrpcUserBase
             user.Surname = surname;
             user.Description = description.Length != 0 ? description : null;
             user.Location = location.Length != 0 ? location : null;
+            user.BirthDate = birthDate.ToDateTime();
 
             await _userRepository.UpdateProfile(user.Id, user);
 

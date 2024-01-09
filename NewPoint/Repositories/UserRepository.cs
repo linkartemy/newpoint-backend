@@ -125,6 +125,7 @@ internal class UserRepository : IUserRepository
             surname=@surname,
             description=@description,
             location=@location,
+            birth_date=@birthDate,
             profile_image_id=@profileImageId,
             header_image_id=@headerImageId
         WHERE id=@id;
@@ -132,7 +133,8 @@ internal class UserRepository : IUserRepository
             new
             {
                 id = id, name = user.Name, surname = user.Surname, description = user.Description,
-                location = user.Location, profileImageId = user.ProfileImageId, headerImageId = user.HeaderImageId
+                location = user.Location, birthDate = user.BirthDate, profileImageId = user.ProfileImageId,
+                headerImageId = user.HeaderImageId
             });
     }
 
