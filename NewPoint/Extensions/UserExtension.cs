@@ -17,7 +17,7 @@ public static class UserExtension
             HeaderImageId = user.HeaderImageId, Ip = user.IP.ToNullableString(), Phone = user.Phone.ToNullableString(),
             LastLoginTimestamp = DateTimeHandler.DateTimeToTimestamp(user.LastLoginTimestamp).ToNullableTimestamp(),
             RegistrationTimestamp = DateTimeHandler.DateTimeToTimestamp(user.RegistrationTimestamp).ToNullableTimestamp(),
-            BirthDate = DateTimeHandler.DateTimeToTimestamp(user.BirthDate.AddHours(10)).ToNullableTimestamp()
+            BirthDate = DateTimeHandler.DateToTimestamp(user.BirthDate).ToNullableTimestamp()
         };
     }
 }

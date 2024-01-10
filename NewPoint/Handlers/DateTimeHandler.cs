@@ -42,4 +42,15 @@ public static class DateTimeHandler
     {
         return dateTime.ToUniversalTime().ToTimestamp();
     }
+    
+    public static Timestamp DateToTimestamp(DateTime dateTime)
+    {
+        var dateTimeUtc = dateTime.ToUniversalTime();
+        if (dateTimeUtc.Day != dateTime.Day)
+        {
+            dateTimeUtc = dateTimeUtc.AddDays(dateTime.Day - dateTimeUtc.Day);
+        }
+
+        return dateTimeUtc.ToUniversalTime().ToTimestamp();
+    }
 }
