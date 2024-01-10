@@ -20,6 +20,28 @@ public class PostService : GrpcPost.GrpcPostBase
         _logger = logger;
     }
 
+    public override async Task<Response> AddPost(AddPostRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var authorId = request.AuthorId;
+            var content = request.Content;
+            await _postRepository.AddPost(authorId, content);
+            response.Data = Any.Pack(new AddPostResponse());
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
+    }
+
     public override async Task<Response> GetPosts(GetPostsRequest request, ServerCallContext context)
     {
         var response = new Response

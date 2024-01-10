@@ -125,16 +125,27 @@ internal class UserRepository : IUserRepository
             surname=@surname,
             description=@description,
             location=@location,
-            birth_date=@birthDate,
-            profile_image_id=@profileImageId,
-            header_image_id=@headerImageId
+            birth_date=@birthDate
         WHERE id=@id;
         ",
             new
             {
                 id = id, name = user.Name, surname = user.Surname, description = user.Description,
-                location = user.Location, birthDate = user.BirthDate, profileImageId = user.ProfileImageId,
-                headerImageId = user.HeaderImageId
+                location = user.Location, birthDate = user.BirthDate
+            });
+    }
+
+    public async Task UpdateProfileImageId(long id, long profileImageId)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET profile_image_id=@profileImageId
+        WHERE id=@id;
+        ",
+            new
+            {
+                id = id, profileImageId = profileImageId
             });
     }
 
@@ -174,5 +185,6 @@ public interface IUserRepository
     Task<string> GetUserHashedPassword(string login);
 
     Task UpdateProfile(long id, User user);
+    Task UpdateProfileImageId(long id, long profileImageId);
     public Task<User?> GetProfileById(long id);
 }

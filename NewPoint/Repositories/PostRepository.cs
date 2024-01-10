@@ -6,6 +6,20 @@ namespace NewPoint.Repositories;
 
 public class PostRepository : IPostRepository
 {
+    public async Task AddPost(long authorId, string content)
+    {
+        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
+        INSERT INTO ""post"" (author_id, content, creation_timestamp)
+        VALUES (@authorId, @content, now())
+        RETURNING id;
+        ",
+            new
+            {
+                authorId = authorId,
+                content = content,
+            });
+    }
+
     public async Task<IEnumerable<Post>> GetPosts()
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
@@ -200,6 +214,7 @@ public class PostRepository : IPostRepository
 
 public interface IPostRepository
 {
+    Task AddPost(long authorId, string content);
     Task<IEnumerable<Post>> GetPosts();
     Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId);
     Task<Post> GetPost(long postId);

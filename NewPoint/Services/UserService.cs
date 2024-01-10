@@ -433,9 +433,7 @@ public class UserService : GrpcUser.GrpcUserBase
             await _objectRepository.InsertObject(request.Data.ToByteArray(), name);
             var id = await _imageRepository.InsertImage(name);
 
-            user.ProfileImageId = id;
-
-            await _userRepository.UpdateProfile(user.Id, user);
+            await _userRepository.UpdateProfileImageId(user.Id, id);
 
             response.Data = Any.Pack(new UpdateProfileImageResponse
             {
