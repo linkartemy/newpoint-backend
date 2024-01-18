@@ -210,6 +210,17 @@ public class PostRepository : IPostRepository
         ",
             new { postId, views });
     }
+    
+    public async Task DeletePost(long postId)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        DELETE FROM ""post"" WHERE id = @postId;
+        ",
+            new
+            {
+                postId = postId
+            });
+    }
 }
 
 public interface IPostRepository
@@ -229,4 +240,5 @@ public interface IPostRepository
     Task SetCommentsById(long postId, int comments);
     Task<int> GetPostViewsById(long postId);
     Task SetPostViewsById(long postId, int views);
+    Task DeletePost(long postId);
 }

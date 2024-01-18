@@ -29,7 +29,7 @@ public class PostService : GrpcPost.GrpcPostBase
         try
         {
             var authorId = request.AuthorId;
-            var content = request.Content;
+            var content = request.Content.Trim();
             await _postRepository.AddPost(authorId, content);
             response.Data = Any.Pack(new AddPostResponse());
             return response;
@@ -303,6 +303,40 @@ public class PostService : GrpcPost.GrpcPostBase
             response.Data = Any.Pack(new AddPostViewResponse
             {
                 Views = views
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+    
+    public override async Task<Response> DeletePost(DeletePostRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _postRepository.DeletePost(request.PostId);
+
+            response.Data = Any.Pack(new DeletePostResponse
+            {
+                Deleted = true
             });
 
             return response;
