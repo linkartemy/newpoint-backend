@@ -108,6 +108,54 @@ public class CommentService : GrpcComment.GrpcCommentBase
             return response;
         }
     }
+    
+    public override async Task<Response> DeleteComment(DeleteCommentRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {    
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            var comment = await _commentRepository.GetCommentById(request.CommentId);
+            if (comment == null)
+            {
+                response.Data = Any.Pack(new DeleteCommentResponse
+                {
+                    Deleted = true
+                });
+
+                return response;
+            }
+
+            await _postRepository.SetCommentsById(comment.PostId,
+                await _postRepository.GetCommentsById(comment.PostId) - 1);
+            await _commentRepository.DeleteCommentLikes(request.CommentId);
+            await _commentRepository.Delete(request.CommentId);
+
+            response.Data = Any.Pack(new DeleteCommentResponse
+            {
+                Deleted = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
 
     public override async Task<Response> LikeComment(LikeCommentRequest request, ServerCallContext context)
     {

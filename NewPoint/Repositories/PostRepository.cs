@@ -141,6 +141,18 @@ public class PostRepository : IPostRepository
                 userId
             });
     }
+    
+    public async Task DeletePostLikes(long postId)
+    {
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        DELETE FROM ""post_like""
+        WHERE post_id=@postId;
+        ",
+            new
+            {
+                postId
+            });
+    }
 
     public async Task<int> GetSharesById(long postId)
     {
@@ -234,6 +246,7 @@ public interface IPostRepository
     Task SetLikesById(long postId, int likes);
     Task<long> InsertPostLike(long postId, long userId);
     Task DeletePostLike(long postId, long userId);
+    Task DeletePostLikes(long postId);
     Task<int> GetSharesById(long postId);
     Task SetSharesById(long postId, int shares);
     Task<int> GetCommentsById(long postId);

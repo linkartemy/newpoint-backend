@@ -12,11 +12,13 @@ public class PostService : GrpcPost.GrpcPostBase
     private readonly ILogger<PostService> _logger;
     private readonly IPostRepository _postRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ICommentRepository _commentRepository;
 
-    public PostService(IUserRepository userRepository, IPostRepository postRepository, ILogger<PostService> logger)
+    public PostService(IUserRepository userRepository, IPostRepository postRepository, ICommentRepository commentRepository, ILogger<PostService> logger)
     {
         _userRepository = userRepository;
         _postRepository = postRepository;
+        _commentRepository = commentRepository;
         _logger = logger;
     }
 
@@ -332,6 +334,15 @@ public class PostService : GrpcPost.GrpcPostBase
                 return response;
             }
 
+            var comments = await _commentRepository.GetCommentsByPostId(request.PostId);
+            foreach (var comment in comments)
+            {
+                if (comment == null) continue;
+                await _commentRepository.DeleteCommentLikes(comment.Id);
+                await _commentRepository.Delete(comment.Id);
+            }
+
+            await _postRepository.DeletePostLikes(request.PostId);
             await _postRepository.DeletePost(request.PostId);
 
             response.Data = Any.Pack(new DeletePostResponse

@@ -21,10 +21,21 @@ public class CommentRepository : ICommentRepository
             });
         return id;
     }
-
-    public async Task<IEnumerable<Comment>> GetCommentsByPostId(long postId)
+    
+    public async Task Delete(long commentId)
     {
-        var comments = await DatabaseHandler.Connection.QueryAsync<Comment>(@"
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        DELETE FROM ""comment"" WHERE id = @commentId;
+        ",
+            new
+            {
+                commentId = commentId
+            });
+    }
+
+    public async Task<IEnumerable<Comment?>> GetCommentsByPostId(long postId)
+    {
+        var comments = await DatabaseHandler.Connection.QueryAsync<Comment?>(@"
         SELECT 
             id AS id,
             user_id AS UserId,
@@ -37,6 +48,23 @@ public class CommentRepository : ICommentRepository
         ",
             new { postId });
         return comments;
+    }
+    
+    public async Task<Comment?> GetCommentById(long commentId)
+    {
+        var comment = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<Comment?>(@"
+        SELECT 
+            id AS id,
+            user_id AS UserId,
+            post_id AS PostId,
+            content AS Content,
+            likes AS Likes,
+            creation_timestamp as CreationTimestamp
+        FROM ""comment""
+        WHERE id=@commentId;
+        ",
+            new { commentId });
+        return comment;
     }
 
     public async Task<bool> IsLikedByUser(long commentId, long userId)
@@ -102,15 +130,30 @@ public class CommentRepository : ICommentRepository
                 userId
             });
     }
+    
+    public async Task DeleteCommentLikes(long commentId)
+    {
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        DELETE FROM ""comment_like""
+        WHERE comment_id=@commentId;
+        ",
+            new
+            {
+                commentId
+            });
+    }
 }
 
 public interface ICommentRepository
 {
     Task<long> Insert(long postId, long userId, string content);
-    Task<IEnumerable<Comment>> GetCommentsByPostId(long postId);
+    Task Delete(long commentId);
+    Task<IEnumerable<Comment?>> GetCommentsByPostId(long postId);
+    Task<Comment?> GetCommentById(long commentId);
     Task<bool> IsLikedByUser(long commentId, long userId);
     Task<long> GetLikesById(long commentId);
     Task SetLikesById(long commentId, long likes);
     Task<long> InsertCommentLike(long commentId, long userId);
     Task DeleteCommentLike(long commentId, long userId);
+    Task DeleteCommentLikes(long commentId);
 }

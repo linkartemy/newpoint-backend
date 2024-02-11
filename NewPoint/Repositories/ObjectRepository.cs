@@ -40,14 +40,14 @@ public class ObjectRepository : IObjectRepository
     {
         var beArgs = new BucketExistsArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket);
-        var found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
+        var found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(true);
         if (!found)
         {
             throw new BucketNotFoundException(
                 $"No bucket with name {S3Handler.Configuration.UserImagesBucket} was found");
         }
 
-        byte[] data = {};
+        var data = Array.Empty<byte>();
         var getObjectArgs = new GetObjectArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket)
             .WithObject(name)
