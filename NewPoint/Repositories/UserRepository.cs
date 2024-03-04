@@ -6,6 +6,17 @@ namespace NewPoint.Repositories;
 
 internal class UserRepository : IUserRepository
 {
+    public async Task<int> CountWithId(long id)
+    {
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
+        SELECT COUNT(1) FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return counter;
+    }
+
     public async Task<bool> LoginExists(string login)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
@@ -130,8 +141,12 @@ internal class UserRepository : IUserRepository
         ",
             new
             {
-                id = id, name = user.Name, surname = user.Surname, description = user.Description,
-                location = user.Location, birthDate = user.BirthDate
+                id = id,
+                name = user.Name,
+                surname = user.Surname,
+                description = user.Description,
+                location = user.Location,
+                birthDate = user.BirthDate
             });
     }
 
@@ -145,7 +160,8 @@ internal class UserRepository : IUserRepository
         ",
             new
             {
-                id = id, profileImageId = profileImageId
+                id = id,
+                profileImageId = profileImageId
             });
     }
 
@@ -172,7 +188,7 @@ internal class UserRepository : IUserRepository
             new { id });
         return profile;
     }
-    
+
     public async Task<int> GetFollowingByUserId(long userId)
     {
         var following = await DatabaseHandler.Connection.QueryFirstAsync<int>(@"
@@ -185,7 +201,7 @@ internal class UserRepository : IUserRepository
 
         return following;
     }
-    
+
     public async Task UpdateFollowingByUserId(long userId, int following)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@"
@@ -200,7 +216,7 @@ internal class UserRepository : IUserRepository
                 following
             });
     }
-    
+
     public async Task<int> GetFollowersByUserId(long userId)
     {
         var followers = await DatabaseHandler.Connection.QueryFirstAsync<int>(@"
@@ -213,7 +229,7 @@ internal class UserRepository : IUserRepository
 
         return followers;
     }
-    
+
     public async Task UpdateFollowersByUserId(long userId, int followers)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@"
@@ -232,6 +248,7 @@ internal class UserRepository : IUserRepository
 
 public interface IUserRepository
 {
+    Task<int> CountWithId(long id);
     Task<bool> LoginExists(string login);
     Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);

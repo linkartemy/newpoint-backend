@@ -153,8 +153,13 @@ public class UserService : GrpcUser.GrpcUserBase
 
             var user = new User
             {
-                Login = login, Name = request.Name, Surname = request.Surname, Email = email, Phone = phone,
-                BirthDate = date, IP = context.Peer,
+                Login = login,
+                Name = request.Name,
+                Surname = request.Surname,
+                Email = email,
+                Phone = phone,
+                BirthDate = date,
+                IP = context.Peer,
                 LastLoginTimestamp = DateTime.Now
             };
 
@@ -451,7 +456,7 @@ public class UserService : GrpcUser.GrpcUserBase
             return response;
         }
     }
-    
+
     public override async Task<Response> Follow(FollowRequest request,
         ServerCallContext context)
     {
@@ -469,6 +474,13 @@ public class UserService : GrpcUser.GrpcUserBase
             if (user is null)
             {
                 response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            if (await _userRepository.CountWithId(userId) is 0)
+            {
+                response.Error = "User you want to follow doesn't exist. Server error. Please contact with us";
                 response.Status = 400;
                 return response;
             }
@@ -494,6 +506,50 @@ public class UserService : GrpcUser.GrpcUserBase
             }
 
             response.Data = Any.Pack(new FollowResponse
+            {
+                Following = following
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> IsFollowing(IsFollowingRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var userId = request.UserId;
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+            if (await _userRepository.CountWithId(userId) is 0)
+            {
+                response.Error = "User you follow doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            var following = await _followRepository.FollowExists(user.Id, userId);
+
+            response.Data = Any.Pack(new IsFollowingResponse
             {
                 Following = following
             });
