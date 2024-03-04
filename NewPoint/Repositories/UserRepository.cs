@@ -163,12 +163,70 @@ internal class UserRepository : IUserRepository
             email as Email,
             phone as Phone,
             birth_date as BirthDate,
-            registration_timestamp as RegistrationTimestamp
+            registration_timestamp as RegistrationTimestamp,
+            followers as Followers,
+            following as Following
         FROM ""user""
         WHERE id=@id;
         ",
             new { id });
         return profile;
+    }
+    
+    public async Task<int> GetFollowingByUserId(long userId)
+    {
+        var following = await DatabaseHandler.Connection.QueryFirstAsync<int>(@"
+        SELECT
+            following
+        FROM ""user""
+        WHERE id=@userId;
+        ",
+            new { userId });
+
+        return following;
+    }
+    
+    public async Task UpdateFollowingByUserId(long userId, int following)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET following=@following
+        WHERE id=@userId;
+        ",
+            new
+            {
+                userId,
+                following
+            });
+    }
+    
+    public async Task<int> GetFollowersByUserId(long userId)
+    {
+        var followers = await DatabaseHandler.Connection.QueryFirstAsync<int>(@"
+        SELECT
+            followers
+        FROM ""user""
+        WHERE id=@userId;
+        ",
+            new { userId });
+
+        return followers;
+    }
+    
+    public async Task UpdateFollowersByUserId(long userId, int followers)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET followers=@followers
+        WHERE id=@userId;
+        ",
+            new
+            {
+                userId,
+                followers
+            });
     }
 }
 
@@ -187,4 +245,8 @@ public interface IUserRepository
     Task UpdateProfile(long id, User user);
     Task UpdateProfileImageId(long id, long profileImageId);
     public Task<User?> GetProfileById(long id);
+    public Task<int> GetFollowingByUserId(long userId);
+    public Task UpdateFollowingByUserId(long userId, int following);
+    public Task<int> GetFollowersByUserId(long userId);
+    public Task UpdateFollowersByUserId(long userId, int followers);
 }

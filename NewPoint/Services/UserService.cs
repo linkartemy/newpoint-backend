@@ -14,13 +14,15 @@ public class UserService : GrpcUser.GrpcUserBase
     private readonly IUserRepository _userRepository;
     private readonly IImageRepository _imageRepository;
     private readonly IObjectRepository _objectRepository;
+    private readonly IFollowRepository _followRepository;
 
     public UserService(IUserRepository userRepository, IImageRepository imageRepository,
-        IObjectRepository objectRepository, ILogger<UserService> logger)
+        IObjectRepository objectRepository, IFollowRepository followRepository, ILogger<UserService> logger)
     {
         _userRepository = userRepository;
         _imageRepository = imageRepository;
         _objectRepository = objectRepository;
+        _followRepository = followRepository;
         _logger = logger;
     }
 
@@ -438,6 +440,62 @@ public class UserService : GrpcUser.GrpcUserBase
             response.Data = Any.Pack(new UpdateProfileImageResponse
             {
                 Id = id
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+    
+    public override async Task<Response> Follow(FollowRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var userId = request.UserId;
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            var following = true;
+
+            if (!await _followRepository.FollowExists(user.Id, userId))
+            {
+                await _followRepository.InsertFollow(user.Id, userId);
+                await _userRepository.UpdateFollowingByUserId(user.Id,
+                    await _userRepository.GetFollowingByUserId(user.Id) + 1);
+                await _userRepository.UpdateFollowersByUserId(userId,
+                    await _userRepository.GetFollowersByUserId(userId) + 1);
+            }
+            else
+            {
+                await _followRepository.DeleteFollow(user.Id, userId);
+                await _userRepository.UpdateFollowingByUserId(user.Id,
+                    await _userRepository.GetFollowingByUserId(user.Id) - 1);
+                await _userRepository.UpdateFollowersByUserId(userId,
+                    await _userRepository.GetFollowersByUserId(userId) - 1);
+                following = false;
+            }
+
+            response.Data = Any.Pack(new FollowResponse
+            {
+                Following = following
             });
 
             return response;
