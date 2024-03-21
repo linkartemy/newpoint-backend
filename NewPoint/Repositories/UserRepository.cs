@@ -114,6 +114,19 @@ internal class UserRepository : IUserRepository
         return user;
     }
 
+    public async Task<string> GetUserHashedPasswordById(long id)
+    {
+        var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
+        SELECT
+            password_hash
+        FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return hashedPassword;
+    }
+
     public async Task<string> GetUserHashedPassword(string login)
     {
         var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
@@ -162,6 +175,36 @@ internal class UserRepository : IUserRepository
             {
                 id = id,
                 profileImageId = profileImageId
+            });
+    }
+
+    public async Task UpdateEmailById(long id, string email)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET email=@email
+        WHERE id=@id;
+        ",
+            new
+            {
+                id,
+                email
+            });
+    }
+
+    public async Task UpdatePasswordById(long id, string hashedPassword)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET password_hash=@hashedPassword
+        WHERE id=@id;
+        ",
+            new
+            {
+                id,
+                hashedPassword
             });
     }
 
@@ -257,10 +300,13 @@ public interface IUserRepository
     Task<User?> GetUserByToken(string token);
     Task<User?> GetPostUserDataById(long id);
 
+    Task<string> GetUserHashedPasswordById(long id);
     Task<string> GetUserHashedPassword(string login);
 
     Task UpdateProfile(long id, User user);
     Task UpdateProfileImageId(long id, long profileImageId);
+    Task UpdateEmailById(long id, string email);
+    Task UpdatePasswordById(long id, string hashedPassword);
     public Task<User?> GetProfileById(long id);
     public Task<int> GetFollowingByUserId(long userId);
     public Task UpdateFollowingByUserId(long userId, int following);

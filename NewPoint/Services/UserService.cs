@@ -457,6 +457,135 @@ public class UserService : GrpcUser.GrpcUserBase
         }
     }
 
+    public override async Task<Response> ChangeEmail(ChangeEmailRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var email = request.Email.Trim();
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _userRepository.UpdateEmailById(user.Id, email);
+
+            await SmtpHandler.SendEmail(user.Email, "NewPoint: Email has been changed", "Your email has been changed successfully. If you didn't do this, please contact with us.");
+
+            response.Data = Any.Pack(new ChangeEmailResponse
+            {
+                Changed = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> ChangePassword(ChangePasswordRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var currentPassword = request.CurrentPassword.Trim();
+            var newPassword = request.NewPassword.Trim();
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            if (newPassword.Length < 8)
+            {
+                response.Error = "Password's length must be at least 8 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            if (newPassword.Length > 32)
+            {
+                response.Error = "Password's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            var hasNumber = new Regex(@"[0-9]+");
+            var hasUpperChar = new Regex(@"[A-Z]+");
+
+            if (!hasNumber.IsMatch(newPassword))
+            {
+                response.Error = "Password must contain at least 1 digit";
+                response.Status = 400;
+                return response;
+            }
+
+            if (!hasUpperChar.IsMatch(newPassword))
+            {
+                response.Error = "Password must contain at least 1 capital letter";
+                response.Status = 400;
+                return response;
+            }
+
+            if (newPassword.Length > 32)
+            {
+                response.Error = "Password's length can't be over 32 symbols";
+                response.Status = 400;
+                return response;
+            }
+
+            user.HashedPassword = await _userRepository.GetUserHashedPasswordById(user.Id);
+
+            if (AuthenticationHandler.VerifyPassword(user, currentPassword) is false)
+            {
+                response.Error = "Wrong current password";
+                response.Status = 400;
+                return response;
+            }
+
+            AuthenticationHandler.AssignPasswordHash(user, newPassword);
+            await _userRepository.UpdatePasswordById(user.Id, user.HashedPassword);
+
+            await SmtpHandler.SendEmail(user.Email, "NewPoint: Password has been changed", "Your password has been changed successfully. If you didn't do this, please contact with us.");
+
+            response.Data = Any.Pack(new ChangePasswordResponse
+            {
+                Changed = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
     public override async Task<Response> Follow(FollowRequest request,
         ServerCallContext context)
     {
