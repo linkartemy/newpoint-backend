@@ -6,6 +6,17 @@ namespace NewPoint.Repositories;
 
 internal class UserRepository : IUserRepository
 {
+    public async Task<int> CountWithId(long id)
+    {
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
+        SELECT COUNT(1) FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return counter;
+    }
+
     public async Task<bool> LoginExists(string login)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
@@ -103,6 +114,19 @@ internal class UserRepository : IUserRepository
         return user;
     }
 
+    public async Task<string> GetUserHashedPasswordById(long id)
+    {
+        var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
+        SELECT
+            password_hash
+        FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return hashedPassword;
+    }
+
     public async Task<string> GetUserHashedPassword(string login)
     {
         var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
@@ -130,8 +154,12 @@ internal class UserRepository : IUserRepository
         ",
             new
             {
-                id = id, name = user.Name, surname = user.Surname, description = user.Description,
-                location = user.Location, birthDate = user.BirthDate
+                id = id,
+                name = user.Name,
+                surname = user.Surname,
+                description = user.Description,
+                location = user.Location,
+                birthDate = user.BirthDate
             });
     }
 
@@ -145,7 +173,38 @@ internal class UserRepository : IUserRepository
         ",
             new
             {
-                id = id, profileImageId = profileImageId
+                id = id,
+                profileImageId = profileImageId
+            });
+    }
+
+    public async Task UpdateEmailById(long id, string email)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET email=@email
+        WHERE id=@id;
+        ",
+            new
+            {
+                id,
+                email
+            });
+    }
+
+    public async Task UpdatePasswordById(long id, string hashedPassword)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET password_hash=@hashedPassword
+        WHERE id=@id;
+        ",
+            new
+            {
+                id,
+                hashedPassword
             });
     }
 
@@ -163,17 +222,76 @@ internal class UserRepository : IUserRepository
             email as Email,
             phone as Phone,
             birth_date as BirthDate,
-            registration_timestamp as RegistrationTimestamp
+            registration_timestamp as RegistrationTimestamp,
+            followers as Followers,
+            following as Following
         FROM ""user""
         WHERE id=@id;
         ",
             new { id });
         return profile;
     }
+
+    public async Task<int> GetFollowingByUserId(long userId)
+    {
+        var following = await DatabaseHandler.Connection.QueryFirstAsync<int>(@"
+        SELECT
+            following
+        FROM ""user""
+        WHERE id=@userId;
+        ",
+            new { userId });
+
+        return following;
+    }
+
+    public async Task UpdateFollowingByUserId(long userId, int following)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET following=@following
+        WHERE id=@userId;
+        ",
+            new
+            {
+                userId,
+                following
+            });
+    }
+
+    public async Task<int> GetFollowersByUserId(long userId)
+    {
+        var followers = await DatabaseHandler.Connection.QueryFirstAsync<int>(@"
+        SELECT
+            followers
+        FROM ""user""
+        WHERE id=@userId;
+        ",
+            new { userId });
+
+        return followers;
+    }
+
+    public async Task UpdateFollowersByUserId(long userId, int followers)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET followers=@followers
+        WHERE id=@userId;
+        ",
+            new
+            {
+                userId,
+                followers
+            });
+    }
 }
 
 public interface IUserRepository
 {
+    Task<int> CountWithId(long id);
     Task<bool> LoginExists(string login);
     Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);
@@ -182,9 +300,16 @@ public interface IUserRepository
     Task<User?> GetUserByToken(string token);
     Task<User?> GetPostUserDataById(long id);
 
+    Task<string> GetUserHashedPasswordById(long id);
     Task<string> GetUserHashedPassword(string login);
 
     Task UpdateProfile(long id, User user);
     Task UpdateProfileImageId(long id, long profileImageId);
+    Task UpdateEmailById(long id, string email);
+    Task UpdatePasswordById(long id, string hashedPassword);
     public Task<User?> GetProfileById(long id);
+    public Task<int> GetFollowingByUserId(long userId);
+    public Task UpdateFollowingByUserId(long userId, int following);
+    public Task<int> GetFollowersByUserId(long userId);
+    public Task UpdateFollowersByUserId(long userId, int followers);
 }

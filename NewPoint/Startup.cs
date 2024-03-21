@@ -54,6 +54,7 @@ public class Startup
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<IImageRepository, ImageRepository>();
         services.AddSingleton<IObjectRepository, ObjectRepository>();
+        services.AddSingleton<IFollowRepository, FollowRepository>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>

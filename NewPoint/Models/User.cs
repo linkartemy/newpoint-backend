@@ -34,4 +34,6 @@ public class User
     [JsonProperty("lastLoginTimestamp")] public DateTime LastLoginTimestamp { get; set; }
 
     [JsonProperty("ip")] public string? IP { get; set; }
+    [JsonProperty("followers")] public int Followers { get; set; }
+    [JsonProperty("following")] public int Following { get; set; }
 }
