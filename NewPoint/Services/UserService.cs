@@ -586,6 +586,44 @@ public class UserService : GrpcUser.GrpcUserBase
         }
     }
 
+    public override async Task<Response> VerifyPassword(VerifyPasswordRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var password = request.Password.Trim();
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            user.HashedPassword = await _userRepository.GetUserHashedPasswordById(user.Id);
+
+            response.Data = Any.Pack(new VerifyPasswordResponse
+            {
+                Verified = AuthenticationHandler.VerifyPassword(user, password)
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
     public override async Task<Response> Follow(FollowRequest request,
         ServerCallContext context)
     {
