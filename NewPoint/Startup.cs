@@ -9,7 +9,9 @@ using NewPoint.Handlers;
 using NewPoint.Repositories;
 using NewPoint.Services;
 using Newtonsoft.Json.Converters;
+using ProjectApi.CustomOptions;
 using Swashbuckle.AspNetCore.Filters;
+using Vault.Client;
 
 namespace NewPoint;
 
@@ -91,13 +93,19 @@ public class Startup
 
         services.AddMvc();
 
-        DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
+        services.Configure<VaultOptions>(Configuration.GetSection("Vault"));
 
-        AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
+        var vaultOptions = Configuration.GetSection("Vault").Get<VaultOptions>();
+        var vaultService = new VaultConfigurationProvider(vaultOptions);
+        vaultService.Load();
 
-        SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
+        // DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
 
-        S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
+        // AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
+
+        // SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
+
+        // S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
 
         services.AddMinio(configureClient => configureClient
             .WithEndpoint(S3Handler.Configuration.Endpoint)
@@ -113,7 +121,7 @@ public class Startup
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                        Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("Token"))),
+                        AuthenticationHandler.JwtToken)),
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     ValidateLifetime = true,

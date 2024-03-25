@@ -6,7 +6,11 @@ public class S3Configuration
     public string AccessKey { get; set; }
     public string SecretKey { get; set; }
     public string UserImagesBucket { get; set; }
-    
+
+    public S3Configuration()
+    {
+    }
+
     public S3Configuration(IConfigurationSection configurationSection)
     {
         Endpoint = configurationSection.GetValue<string>("Endpoint");

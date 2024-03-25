@@ -42,7 +42,7 @@ public static class DateTimeHandler
     {
         return dateTime.ToUniversalTime().ToTimestamp();
     }
-    
+
     public static Timestamp DateToTimestamp(DateTime dateTime)
     {
         var dateTimeUtc = dateTime.ToUniversalTime();
