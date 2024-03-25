@@ -7,6 +7,10 @@ public class SmtpConfiguration
     public string Server { get; set; }
     public int Port { get; set; }
 
+    public SmtpConfiguration()
+    {
+    }
+
     public SmtpConfiguration(IConfigurationSection configurationSection)
     {
         Email = configurationSection.GetValue<string>("email");
