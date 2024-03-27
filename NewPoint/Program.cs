@@ -43,9 +43,6 @@ public class Program
 
                         options.ListenAnyIP(5136,
                             listenOptions => { listenOptions.Protocols = HttpProtocols.Http2; });
-
-                        options.ListenAnyIP(7169,
-                            listenOptions => { listenOptions.Protocols = HttpProtocols.Http1; });
                     });
             });
     }
