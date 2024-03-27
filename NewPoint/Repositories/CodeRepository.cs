@@ -10,16 +10,9 @@ public class CodeRepository : ICodeRepository
     private static List<CodeData> _codes = new();
     private static List<Timer> _timers = new();
 
-    public async Task AddEmailCode(string email, string code, int lifeTime = 120000)
+    public async Task AddCode(CodeData codeData)
     {
-        var codeData = new CodeData
-        {
-            Id = _count,
-            Email = email,
-            Code = code,
-            LifeTime = lifeTime
-        };
-        var timer = new Timer(lifeTime);
+        var timer = new Timer(codeData.LifeTime);
         timer.Elapsed += (source, args) =>
         {
             RemoveCode(source, args, _count);
@@ -29,13 +22,14 @@ public class CodeRepository : ICodeRepository
         };
         timer.Start();
         _timers.Add(timer);
+        codeData.Id = _count;
         ++_count;
         _codes.Add(codeData);
     }
 
-    public async Task<bool> VerifyEmailCode(string email, string code)
+    public async Task<bool> VerifyCode(CodeData codeData)
     {
-        return _codes.Count(c => c.Code == code && c.Email == email) != 0;
+        return _codes.Count(c => c.Code == codeData.Code && c.CodeType == codeData.CodeType) != 0;
     }
 
     private void RemoveCode(object? source, ElapsedEventArgs args, long id)
@@ -47,6 +41,6 @@ public class CodeRepository : ICodeRepository
 
 public interface ICodeRepository
 {
-    Task AddEmailCode(string email, string code, int lifeTime = 120);
-    Task<bool> VerifyEmailCode(string email, string code);
+    Task AddCode(CodeData codeData);
+    Task<bool> VerifyCode(CodeData codeData);
 }

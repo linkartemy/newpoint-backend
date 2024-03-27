@@ -41,10 +41,10 @@ public class Program
                     {
                         options.Limits.MinRequestBodyDataRate = null;
 
-                        options.ListenLocalhost(5136,
+                        options.ListenAnyIP(5136,
                             listenOptions => { listenOptions.Protocols = HttpProtocols.Http2; });
 
-                        options.ListenLocalhost(7169,
+                        options.ListenAnyIP(7169,
                             listenOptions => { listenOptions.Protocols = HttpProtocols.Http1; });
                     });
             });
