@@ -51,7 +51,7 @@ public class ObjectRepository : IObjectRepository
         var getObjectArgs = new GetObjectArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket)
             .WithObject(name)
-            .WithFile(name).WithCallbackStream((stream) =>
+            .WithCallbackStream((stream) =>
             {
                 data = StreamHandler.StreamToBytes(stream);
             });
@@ -59,7 +59,7 @@ public class ObjectRepository : IObjectRepository
         return data;
     }
 
-    public async Task<string> InsertObject(byte[] data, string objectName)
+    public async Task<string> InsertObject(byte[] data, string objectName, string contentType = "image/jpeg")
     {
         var beArgs = new BucketExistsArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket);
@@ -71,21 +71,10 @@ public class ObjectRepository : IObjectRepository
             await _minioClient.MakeBucketAsync(mbArgs).ConfigureAwait(false);
         }
 
-        var filePath = $"./{objectName}";
-        if (!File.Exists(filePath))
-        {
-            File.Create(filePath);
-        }
-
-        await File.WriteAllBytesAsync(filePath, data);
-
-        var contentType = "image/jpeg";
-        new FileExtensionContentTypeProvider().TryGetContentType(filePath, out contentType);
-
         var putObjectArgs = new PutObjectArgs()
             .WithBucket(S3Handler.Configuration.UserImagesBucket)
             .WithObject(objectName)
-            .WithFileName(filePath)
+            .WithFileName(objectName)
             .WithContentType(contentType);
         var response = await _minioClient.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
         return response.ObjectName;
@@ -96,5 +85,5 @@ public interface IObjectRepository
 {
     Task<bool> ObjectExists(string objectName);
     Task<byte[]> GetObjectByName(string name);
-    Task<string> InsertObject(byte[] data, string objectName);
+    Task<string> InsertObject(byte[] data, string objectName, string contentType = "image/jpeg");
 }

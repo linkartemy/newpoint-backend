@@ -29,6 +29,7 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         services.AddGrpc(options => { options.EnableDetailedErrors = true; });
         services.AddMvc(options => options.EnableEndpointRouting = false);
 

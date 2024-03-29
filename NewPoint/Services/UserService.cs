@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.AspNetCore.StaticFiles;
 using NewPoint.Extensions;
 using NewPoint.Handlers;
 using NewPoint.Models;
@@ -437,7 +438,13 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
-            await _objectRepository.InsertObject(request.Data.ToByteArray(), name);
+            var contentType = "image/jpeg";
+            new FileExtensionContentTypeProvider().TryGetContentType(name, out contentType);
+            while (await _imageRepository.Count(name) != 0)
+            {
+                name = StringHandler.GenerateString(32);
+            }
+            await _objectRepository.InsertObject(request.Data.ToByteArray(), name, contentType);
             var id = await _imageRepository.InsertImage(name);
 
             await _userRepository.UpdateProfileImageId(user.Id, id);
