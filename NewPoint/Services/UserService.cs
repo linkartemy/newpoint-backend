@@ -171,6 +171,13 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
+            if (await _userRepository.CountByEmail(email) != 0)
+            {
+                response.Error = "User with this email already exists";
+                response.Status = 400;
+                return response;
+            }
+
             AuthenticationHandler.AssignPasswordHash(user, password);
 
             var token = AuthenticationHandler.CreateToken(user);
@@ -267,7 +274,7 @@ public class UserService : GrpcUser.GrpcUserBase
         };
         try
         {
-            var login = request.Login.Trim();
+            var login = request.Login.Trim().ToLower();
 
             if (login.Length < 4)
             {
@@ -444,7 +451,7 @@ public class UserService : GrpcUser.GrpcUserBase
             {
                 name = StringHandler.GenerateString(32);
             }
-            await _objectRepository.InsertObject(request.Data.ToByteArray(), name, contentType);
+            await _objectRepository.InsertObject(request.Data.ToByteArray(), S3Handler.Configuration.UserImagesBucket, name, contentType);
             var id = await _imageRepository.InsertImage(name);
 
             await _userRepository.UpdateProfileImageId(user.Id, id);

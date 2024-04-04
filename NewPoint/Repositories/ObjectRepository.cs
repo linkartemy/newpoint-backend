@@ -15,18 +15,18 @@ public class ObjectRepository : IObjectRepository
         _minioClient = minioClient;
     }
 
-    public async Task<bool> ObjectExists(string objectName)
+    public async Task<bool> ObjectExists(string bucketName, string objectName)
     {
         try
         {
             var beArgs = new BucketExistsArgs()
-                .WithBucket(S3Handler.Configuration.UserImagesBucket);
+                .WithBucket(bucketName);
             var found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
             if (!found)
             {
                 return false;
             }
-            var args = new GetObjectArgs().WithBucket(S3Handler.Configuration.UserImagesBucket).WithObject(objectName);
+            var args = new GetObjectArgs().WithBucket(bucketName).WithObject(objectName);
             var obj = await _minioClient.GetObjectAsync(args).ConfigureAwait(false);
             return true;
         }
@@ -36,20 +36,20 @@ public class ObjectRepository : IObjectRepository
         }
     }
 
-    public async Task<byte[]> GetObjectByName(string name)
+    public async Task<byte[]> GetObjectByName(string bucketName, string name)
     {
         var beArgs = new BucketExistsArgs()
-            .WithBucket(S3Handler.Configuration.UserImagesBucket);
+            .WithBucket(bucketName);
         var found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(true);
         if (!found)
         {
             throw new BucketNotFoundException(
-                $"No bucket with name {S3Handler.Configuration.UserImagesBucket} was found");
+                $"No bucket with name {bucketName} was found");
         }
 
         var data = Array.Empty<byte>();
         var getObjectArgs = new GetObjectArgs()
-            .WithBucket(S3Handler.Configuration.UserImagesBucket)
+            .WithBucket(bucketName)
             .WithObject(name)
             .WithCallbackStream((stream) =>
             {
@@ -59,20 +59,20 @@ public class ObjectRepository : IObjectRepository
         return data;
     }
 
-    public async Task<string> InsertObject(byte[] data, string objectName, string contentType = "image/jpeg")
+    public async Task<string> InsertObject(byte[] data, string bucketName, string objectName, string contentType = "image/jpeg")
     {
         var beArgs = new BucketExistsArgs()
-            .WithBucket(S3Handler.Configuration.UserImagesBucket);
+            .WithBucket(bucketName);
         var found = await _minioClient.BucketExistsAsync(beArgs).ConfigureAwait(false);
         if (!found)
         {
             var mbArgs = new MakeBucketArgs()
-                .WithBucket(S3Handler.Configuration.UserImagesBucket);
+                .WithBucket(bucketName);
             await _minioClient.MakeBucketAsync(mbArgs).ConfigureAwait(false);
         }
 
         var putObjectArgs = new PutObjectArgs()
-            .WithBucket(S3Handler.Configuration.UserImagesBucket)
+            .WithBucket(bucketName)
             .WithObject(objectName)
             .WithFileName(objectName)
             .WithContentType(contentType);
@@ -83,7 +83,7 @@ public class ObjectRepository : IObjectRepository
 
 public interface IObjectRepository
 {
-    Task<bool> ObjectExists(string objectName);
-    Task<byte[]> GetObjectByName(string name);
-    Task<string> InsertObject(byte[] data, string objectName, string contentType = "image/jpeg");
+    Task<bool> ObjectExists(string bucketName, string objectName);
+    Task<byte[]> GetObjectByName(string bucketName, string name);
+    Task<string> InsertObject(byte[] data, string bucketName, string objectName, string contentType = "image/jpeg");
 }

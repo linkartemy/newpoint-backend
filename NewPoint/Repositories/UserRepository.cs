@@ -28,6 +28,17 @@ internal class UserRepository : IUserRepository
         return counter != 0;
     }
 
+    public async Task<int> CountByEmail(string email)
+    {
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
+        SELECT COUNT(1) FROM ""user""
+        WHERE email=@email;
+        ",
+            new { email });
+
+        return counter;
+    }
+
     public async Task InsertUser(User user, string token)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
@@ -60,6 +71,19 @@ internal class UserRepository : IUserRepository
         WHERE login=@login;
         ",
             new { login });
+
+        return user;
+    }
+
+    public async Task<User> GetUserByEmail(string email)
+    {
+        var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@"
+        SELECT
+            *
+        FROM ""user""
+        WHERE email=@email;
+        ",
+            new { email });
 
         return user;
     }
@@ -293,8 +317,10 @@ public interface IUserRepository
 {
     Task<int> CountWithId(long id);
     Task<bool> LoginExists(string login);
+    Task<int> CountByEmail(string email);
     Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);
+    Task<User> GetUserByEmail(string email);
     Task<string> GetTokenById(long id);
     Task UpdateToken(long id, string token);
     Task<User?> GetUserByToken(string token);
