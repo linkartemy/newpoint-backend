@@ -236,6 +236,7 @@ internal class UserRepository : IUserRepository
     {
         var profile = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@"
         SELECT
+            id AS Id,
             login AS Login,
             name AS Name,
             surname AS Surname,

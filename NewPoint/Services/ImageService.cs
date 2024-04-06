@@ -39,7 +39,7 @@ public class ImageService : GrpcImage.GrpcImageBase
             }
 
             var name = await _imageRepository.GetImageNameById(request.Id);
-            var image = await _objectRepository.GetObjectByName(name);
+            var image = await _objectRepository.GetObjectByName("user-images", name);
 
             response.Data = Any.Pack(new GetImageByIdResponse
             {
