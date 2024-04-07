@@ -38,14 +38,25 @@ public class UserService : GrpcUser.GrpcUserBase
             var login = request.Login.Trim();
             var password = request.Password.Trim();
 
-            if (await _userRepository.LoginExists(login) is false)
+            var usersWithLogin = await _userRepository.CountByLogin(login);
+            var usersWithEmail = await _userRepository.CountByEmail(login);
+
+            if (usersWithLogin is 0 && usersWithEmail is 0)
             {
                 response.Error = "Wrong login or password";
                 response.Status = 400;
                 return response;
             }
 
-            var user = await _userRepository.GetUserByLogin(login);
+            User user;
+            if (usersWithLogin is not 0)
+            {
+                user = await _userRepository.GetUserByLogin(login);
+            }
+            else
+            {
+                user = await _userRepository.GetUserByEmail(login);
+            }
             user.HashedPassword = await _userRepository.GetUserHashedPassword(user.Login);
 
             if (AuthenticationHandler.VerifyPassword(user, password) is false)
@@ -164,7 +175,7 @@ public class UserService : GrpcUser.GrpcUserBase
                 LastLoginTimestamp = DateTime.Now
             };
 
-            if (await _userRepository.LoginExists(login))
+            if (await _userRepository.CountByLogin(login) != 0)
             {
                 response.Error = "User with this name already exists";
                 response.Status = 400;
@@ -340,7 +351,7 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
-            if (await _userRepository.LoginExists(login))
+            if (await _userRepository.CountByLogin(login) != 0)
             {
                 response.Error = "User with this name already exists";
                 response.Status = 400;
@@ -733,6 +744,78 @@ public class UserService : GrpcUser.GrpcUserBase
             response.Data = Any.Pack(new IsFollowingResponse
             {
                 Following = following
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetTwoFactorByToken(GetTwoFactorByTokenRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var token = request.Token;
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            var twoFactor = await _userRepository.GetTwoFactorById(user.Id);
+
+            response.Data = Any.Pack(new GetTwoFactorByTokenResponse
+            {
+                Enabled = twoFactor
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> UpdateTwoFactor(UpdateTwoFactorRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var enabled = request.Enabled;
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _userRepository.UpdateTwoFactorById(user.Id, enabled);
+
+            response.Data = Any.Pack(new UpdateTwoFactorResponse
+            {
+                Updated = enabled
             });
 
             return response;

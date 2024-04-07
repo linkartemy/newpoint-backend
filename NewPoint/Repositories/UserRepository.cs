@@ -17,7 +17,7 @@ internal class UserRepository : IUserRepository
         return counter;
     }
 
-    public async Task<bool> LoginExists(string login)
+    public async Task<int> CountByLogin(string login)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
         SELECT COUNT(1) FROM ""user""
@@ -25,7 +25,7 @@ internal class UserRepository : IUserRepository
         ",
             new { login });
 
-        return counter != 0;
+        return counter;
     }
 
     public async Task<int> CountByEmail(string email)
@@ -312,12 +312,40 @@ internal class UserRepository : IUserRepository
                 followers
             });
     }
+
+    public async Task<bool> GetTwoFactorById(long id)
+    {
+        var twoFactor = await DatabaseHandler.Connection.QueryFirstAsync<bool>(@"
+        SELECT
+            two_factor
+        FROM ""user""
+        WHERE id=@id;
+        ",
+            new { id });
+
+        return twoFactor;
+    }
+
+    public async Task UpdateTwoFactorById(long id, bool twoFactor)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync(@"
+        UPDATE
+            ""user""
+        SET two_factor=@twoFactor
+        WHERE id=@id;
+        ",
+            new
+            {
+                id,
+                twoFactor
+            });
+    }
 }
 
 public interface IUserRepository
 {
     Task<int> CountWithId(long id);
-    Task<bool> LoginExists(string login);
+    Task<int> CountByLogin(string login);
     Task<int> CountByEmail(string email);
     Task InsertUser(User user, string token);
     Task<User> GetUserByLogin(string login);
@@ -339,4 +367,6 @@ public interface IUserRepository
     public Task UpdateFollowingByUserId(long userId, int following);
     public Task<int> GetFollowersByUserId(long userId);
     public Task UpdateFollowersByUserId(long userId, int followers);
+    public Task<bool> GetTwoFactorById(long id);
+    public Task UpdateTwoFactorById(long id, bool twoFactor);
 }
