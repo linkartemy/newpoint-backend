@@ -175,7 +175,9 @@ public class Startup
         {
             endpoints.MapGrpcService<UserService>();
             endpoints.MapGrpcService<PostService>();
+            endpoints.MapGrpcService<ArticleService>();
             endpoints.MapGrpcService<CommentService>();
+            endpoints.MapGrpcService<ArticleCommentService>();
             endpoints.MapGrpcService<CodeService>();
             endpoints.MapGrpcService<ImageService>();
             endpoints.MapGrpcReflectionService();
