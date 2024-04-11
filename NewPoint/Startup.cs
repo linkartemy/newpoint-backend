@@ -50,10 +50,12 @@ public class Startup
         services.AddSingleton<IUserRepository, UserRepository>();
         // services.AddSingleton<IPostService, PostService>();
         services.AddSingleton<IPostRepository, PostRepository>();
+        services.AddSingleton<IArticleRepository, ArticleRepository>();
         // services.AddSingleton<ICodeService, CodeService>();
         services.AddSingleton<ICodeRepository, CodeRepository>();
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<ICommentRepository, CommentRepository>();
+        services.AddSingleton<IArticleCommentRepository, ArticleCommentRepository>();
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<IImageRepository, ImageRepository>();
         services.AddSingleton<IObjectRepository, ObjectRepository>();
@@ -174,6 +176,7 @@ public class Startup
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapGrpcService<UserService>();
+            endpoints.MapGrpcService<FeedService>();
             endpoints.MapGrpcService<PostService>();
             endpoints.MapGrpcService<ArticleService>();
             endpoints.MapGrpcService<CommentService>();

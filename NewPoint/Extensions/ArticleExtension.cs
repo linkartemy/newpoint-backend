@@ -1,4 +1,5 @@
-﻿using NewPoint.Handlers;
+﻿using Google.Protobuf.WellKnownTypes;
+using NewPoint.Handlers;
 using NewPoint.Models;
 
 namespace NewPoint.Extensions;
@@ -25,5 +26,12 @@ public static class ArticleExtension
             Liked = article.Liked,
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(article.CreationTimestamp)
         };
+    }
+
+    public static NullableArticle ToNullableArticle(this ArticleModel data)
+    {
+        return data is null
+            ? new NullableArticle { Null = new NullValue() }
+            : new NullableArticle { Data = data };
     }
 }

@@ -11,6 +11,7 @@
         <Protobuf Include="Protos\response.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\nullable.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\user.proto" GrpcServices="Server" ProtoRoot="Protos\" />
+        <Protobuf Include="Protos\feed.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\post.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\article.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\comment.proto" GrpcServices="Server" ProtoRoot="Protos\" />

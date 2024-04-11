@@ -23,7 +23,7 @@ public class PostRepository : IPostRepository
     public async Task<IEnumerable<Post>> GetPosts()
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
-        SELECT 
+        SELECT
             id AS Id,
             author_id AS AuthorId,
             content AS Content,
@@ -41,7 +41,7 @@ public class PostRepository : IPostRepository
     public async Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId)
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
-        SELECT 
+        SELECT
             id AS Id,
             author_id AS AuthorId,
             content AS Content,
@@ -56,6 +56,35 @@ public class PostRepository : IPostRepository
         ",
             new { authorId });
         return reader;
+    }
+
+    public async Task<IEnumerable<Post>> GetPostsFromId(long id)
+    {
+        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
+        SELECT 
+            id AS Id,
+            author_id AS AuthorId,
+            content AS Content,
+            images AS Images,
+            likes AS Likes,
+            shares AS Shares,
+            comments AS Comments,
+            views AS Views,
+            creation_timestamp as CreationTimestamp
+        FROM ""post""
+        WHERE id <= @id
+        ORDER BY id DESC
+        LIMIT 10
+        ",
+            new { id });
+        return reader;
+    }
+
+    public async Task<long> GetMaxId()
+    {
+        var id = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@"
+        SELECT MAX(id) FROM ""post"";");
+        return id;
     }
 
     public async Task<Post> GetPost(long postId)
@@ -141,7 +170,7 @@ public class PostRepository : IPostRepository
                 userId
             });
     }
-    
+
     public async Task DeletePostLikes(long postId)
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@"
@@ -222,7 +251,7 @@ public class PostRepository : IPostRepository
         ",
             new { postId, views });
     }
-    
+
     public async Task DeletePost(long postId)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@"
@@ -240,6 +269,8 @@ public interface IPostRepository
     Task AddPost(long authorId, string content);
     Task<IEnumerable<Post>> GetPosts();
     Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId);
+    Task<IEnumerable<Post>> GetPostsFromId(long id);
+    Task<long> GetMaxId();
     Task<Post> GetPost(long postId);
     Task<bool> IsLikedByUser(long postId, long userId);
     Task<int> GetLikesById(long postId);

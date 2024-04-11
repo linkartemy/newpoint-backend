@@ -40,6 +40,29 @@ public class ArticleRepository : IArticleRepository
         return reader;
     }
 
+    public async Task<IEnumerable<Article>> GetArticlesFromId(long id)
+    {
+        var reader = await DatabaseHandler.Connection.QueryAsync<Article>(@"
+        SELECT 
+            id AS Id,
+            author_id AS AuthorId,
+            title AS Title,
+            content AS Content,
+            images AS Images,
+            likes AS Likes,
+            shares AS Shares,
+            comments AS Comments,
+            views AS Views,
+            creation_timestamp as CreationTimestamp
+        FROM ""article""
+        WHERE id <= @id
+        ORDER BY id DESC
+        LIMIT 10;
+        ",
+            new { id });
+        return reader;
+    }
+
     public async Task<IEnumerable<Article>> GetArticlesByAuthorId(long authorId)
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Article>(@"
@@ -61,10 +84,18 @@ public class ArticleRepository : IArticleRepository
         return reader;
     }
 
+    public async Task<long> GetMaxId()
+    {
+        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
+        SELECT MAX(id) FROM ""article"";
+        ");
+        return id;
+    }
+
     public async Task<Article> GetArticle(long articleId)
     {
         var article = await DatabaseHandler.Connection.QueryFirstAsync<Article>(@"
-        SELECT 
+        SELECT
             id AS Id,
             author_id AS AuthorId,
             title AS Title,
@@ -244,6 +275,8 @@ public interface IArticleRepository
     Task AddArticle(long authorId, string title, string content);
     Task<IEnumerable<Article>> GetArticles();
     Task<IEnumerable<Article>> GetArticlesByAuthorId(long authorId);
+    Task<IEnumerable<Article>> GetArticlesFromId(long id);
+    Task<long> GetMaxId();
     Task<Article> GetArticle(long articleId);
     Task<bool> IsLikedByUser(long articleId, long userId);
     Task<int> GetLikesById(long articleId);
