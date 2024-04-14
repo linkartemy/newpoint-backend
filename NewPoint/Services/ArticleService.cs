@@ -108,22 +108,26 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                 };
             }
 
-            var articles = (await _articleRepository.GetArticlesByAuthorId(request.UserId))
-                .OrderByDescending(article => article.CreationTimestamp).Select(
-                    async article =>
-                    {
-                        article.Login = user.Login;
-                        article.Name = user.Name;
-                        article.Surname = user.Surname;
-                        article.ProfileImageId = user.ProfileImageId;
+            var lastArticleId = request.LastArticleId;
 
-                        var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-                        article.Liked =
-                            await _articleRepository.IsLikedByUser(article.Id,
-                                (await _userRepository.GetUserByToken(token)).Id);
+            var articles = (await _articleRepository.GetArticlesFromId(lastArticleId))
+            .Where(article => article.AuthorId.Equals)
+            .OrderByDescending(article => article.CreationTimestamp)
+            .Select(
+                async article =>
+                {
+                    article.Login = user.Login;
+                    article.Name = user.Name;
+                    article.Surname = user.Surname;
+                    article.ProfileImageId = user.ProfileImageId;
 
-                        return article.ToArticleModel();
-                    }).Select(article => article.Result).ToList();
+                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                    article.Liked =
+                        await _articleRepository.IsLikedByUser(article.Id,
+                            (await _userRepository.GetUserByToken(token)).Id);
+
+                    return article.ToArticleModel();
+                }).Select(article => article.Result).ToList();
 
             response.Data = Any.Pack(new GetArticlesByUserIdResponse { Articles = { articles } });
             return response;
