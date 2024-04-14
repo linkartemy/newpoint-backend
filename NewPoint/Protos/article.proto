@@ -43,7 +43,9 @@ message AddArticleRequest {
   string content = 3;
 }
 
-message AddArticleResponse {}
+message AddArticleResponse {
+  int64 id = 1;
+}
 
 message GetArticlesRequest {}
 

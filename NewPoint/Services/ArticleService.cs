@@ -33,8 +33,8 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             var authorId = request.AuthorId;
             var title = request.Title.Trim();
             var content = request.Content.Trim();
-            await _articleRepository.AddArticle(authorId, title, content);
-            response.Data = Any.Pack(new AddArticleResponse());
+            var id = await _articleRepository.AddArticle(authorId, title, content);
+            response.Data = Any.Pack(new AddArticleResponse { Id = id });
             return response;
         }
         catch (Exception)

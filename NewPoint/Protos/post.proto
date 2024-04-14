@@ -41,7 +41,9 @@ message AddPostRequest {
   string content = 2;
 }
 
-message AddPostResponse {}
+message AddPostResponse {
+  int64 id = 1;
+}
 
 message GetPostsRequest {}
 

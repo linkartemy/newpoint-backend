@@ -6,7 +6,7 @@ namespace NewPoint.Repositories;
 
 public class ArticleRepository : IArticleRepository
 {
-    public async Task AddArticle(long authorId, string title, string content)
+    public async Task<long> AddArticle(long authorId, string title, string content)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
         INSERT INTO ""article"" (author_id, title, content, creation_timestamp)
@@ -19,6 +19,7 @@ public class ArticleRepository : IArticleRepository
                 title = title,
                 content = content,
             });
+        return id;
     }
 
     public async Task<IEnumerable<Article>> GetArticles()
@@ -272,7 +273,7 @@ public class ArticleRepository : IArticleRepository
 
 public interface IArticleRepository
 {
-    Task AddArticle(long authorId, string title, string content);
+    Task<long> AddArticle(long authorId, string title, string content);
     Task<IEnumerable<Article>> GetArticles();
     Task<IEnumerable<Article>> GetArticlesByAuthorId(long authorId);
     Task<IEnumerable<Article>> GetArticlesFromId(long id);

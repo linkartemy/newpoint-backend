@@ -32,8 +32,8 @@ public class PostService : GrpcPost.GrpcPostBase
         {
             var authorId = request.AuthorId;
             var content = request.Content.Trim();
-            await _postRepository.AddPost(authorId, content);
-            response.Data = Any.Pack(new AddPostResponse());
+            var id = await _postRepository.AddPost(authorId, content);
+            response.Data = Any.Pack(new AddPostResponse { Id = id });
             return response;
         }
         catch (Exception)
@@ -316,7 +316,7 @@ public class PostService : GrpcPost.GrpcPostBase
             return response;
         }
     }
-    
+
     public override async Task<Response> DeletePost(DeletePostRequest request, ServerCallContext context)
     {
         var response = new Response
