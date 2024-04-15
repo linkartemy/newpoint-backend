@@ -109,6 +109,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             }
 
             var lastArticleId = request.LastArticleId;
+            if (lastArticleId == -1)
+            {
+                lastArticleId = await _articleRepository.GetMaxId();
+            }
 
             var articles = (await _articleRepository.GetArticlesFromId(lastArticleId))
             .Where(article => article.AuthorId == request.UserId)
