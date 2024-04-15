@@ -111,7 +111,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             var lastArticleId = request.LastArticleId;
 
             var articles = (await _articleRepository.GetArticlesFromId(lastArticleId))
-            .Where(article => article.AuthorId.Equals)
+            .Where(article => article.AuthorId == request.UserId)
             .OrderByDescending(article => article.CreationTimestamp)
             .Select(
                 async article =>
