@@ -358,6 +358,13 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
+            if (await _userRepository.CountByEmail(email) != 0)
+            {
+                response.Error = "User with this email already exists";
+                response.Status = 400;
+                return response;
+            }
+
             response.Data = Any.Pack(new ValidateUserResponse
             {
                 Valid = true
