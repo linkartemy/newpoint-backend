@@ -463,9 +463,16 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
+            var fileDetails = name.Split('.');
+            var extension = "jpeg";
+            if (fileDetails.Length > 1)
+            {
+                extension = fileDetails.Last();
+            }
             while (await _imageRepository.Count(name) != 0)
             {
                 name = StringHandler.GenerateString(32);
+                name += "." + extension;
             }
             var contentType = "image/jpeg";
             new FileExtensionContentTypeProvider().TryGetContentType(name, out contentType);
