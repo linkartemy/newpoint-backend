@@ -71,13 +71,17 @@ public class ObjectRepository : IObjectRepository
             await _minioClient.MakeBucketAsync(mbArgs).ConfigureAwait(false);
         }
 
-        var putObjectArgs = new PutObjectArgs()
-            .WithBucket(bucketName)
-            .WithObject(objectName)
-            .WithFileName(objectName)
-            .WithContentType(contentType);
-        var response = await _minioClient.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
-        return response.ObjectName;
+        using (var stream = new MemoryStream(data))
+        {
+            var putObjectArgs = new PutObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(objectName)
+                .WithObjectSize(stream.Length)
+                .WithStreamData(stream)
+                .WithContentType(contentType);
+            var response = await _minioClient.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
+            return response.ObjectName;
+        }
     }
 }
 

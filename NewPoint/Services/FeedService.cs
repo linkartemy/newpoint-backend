@@ -99,6 +99,10 @@ public class FeedService : GrpcFeed.GrpcFeedBase
                     Post = post.ToPostModel().ToNullablePost()
                 });
             }
+            feedElements = feedElements.OrderByDescending(feedElement =>
+            feedElement.Article.KindCase == NullableArticle.KindOneofCase.Null ?
+            feedElement.Post.Data.CreationTimestamp :
+            feedElement.Article.Data.CreationTimestamp).ToList();
             response.Data = Any.Pack(new GetFeedByUserIdResponse
             {
                 Feed = { feedElements }

@@ -463,13 +463,13 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
-            var contentType = "image/jpeg";
-            new FileExtensionContentTypeProvider().TryGetContentType(name, out contentType);
             while (await _imageRepository.Count(name) != 0)
             {
                 name = StringHandler.GenerateString(32);
             }
-            await _objectRepository.InsertObject(request.Data.ToByteArray(), S3Handler.Configuration.UserImagesBucket, name, contentType);
+            var contentType = "image/jpeg";
+            new FileExtensionContentTypeProvider().TryGetContentType(name, out contentType);
+            await _objectRepository.InsertObject(data.ToByteArray(), S3Handler.Configuration.UserImagesBucket, name, contentType);
             var id = await _imageRepository.InsertImage(name);
 
             await _userRepository.UpdateProfileImageId(user.Id, id);
