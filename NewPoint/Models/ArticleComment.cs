@@ -20,7 +20,6 @@ public class ArticleComment
 
     [JsonProperty("content")] public string Content { get; set; }
 
-    [JsonProperty("views")] public bool Views { get; set; }
     [JsonProperty("liked")] public bool Liked { get; set; }
 
     [JsonProperty("creation_timestamp")] public DateTime CreationTimestamp { get; set; }

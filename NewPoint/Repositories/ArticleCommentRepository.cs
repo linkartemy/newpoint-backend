@@ -37,7 +37,12 @@ public class ArticleCommentRepository : IArticleCommentRepository
     {
         var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(@"
         SELECT 
-            *
+            id AS id,
+            user_id AS UserId,
+            article_id AS PostId,
+            content AS Content,
+            likes AS Likes,
+            creation_timestamp as CreationTimestamp
         FROM ""article_comment""
         WHERE article_id=@articleId;
         ",
