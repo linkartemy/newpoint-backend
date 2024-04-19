@@ -21,7 +21,7 @@ public class CommentRepository : ICommentRepository
             });
         return id;
     }
-    
+
     public async Task Delete(long commentId)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@"
@@ -37,19 +37,14 @@ public class CommentRepository : ICommentRepository
     {
         var comments = await DatabaseHandler.Connection.QueryAsync<Comment?>(@"
         SELECT 
-            id AS id,
-            user_id AS UserId,
-            post_id AS PostId,
-            content AS Content,
-            likes AS Likes,
-            creation_timestamp as CreationTimestamp
+            *
         FROM ""comment""
         WHERE post_id=@postId;
         ",
             new { postId });
         return comments;
     }
-    
+
     public async Task<Comment?> GetCommentById(long commentId)
     {
         var comment = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<Comment?>(@"
@@ -130,7 +125,7 @@ public class CommentRepository : ICommentRepository
                 userId
             });
     }
-    
+
     public async Task DeleteCommentLikes(long commentId)
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@"

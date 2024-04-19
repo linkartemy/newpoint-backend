@@ -25,7 +25,8 @@ message ArticleCommentModel {
   string content = 7;
   int32 likes = 8;
   bool liked = 9;
-  google.protobuf.Timestamp creation_timestamp = 10;
+  int32 views = 10;
+  google.protobuf.Timestamp creation_timestamp = 11;
 }
 
 message GetCommentsByArticleIdRequest {
