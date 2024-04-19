@@ -11,13 +11,15 @@ public class PostService : GrpcPost.GrpcPostBase
 {
     private readonly ILogger<PostService> _logger;
     private readonly IPostRepository _postRepository;
+    private readonly IPostBookmarkRepository _postBookmarkRepository;
     private readonly IUserRepository _userRepository;
     private readonly ICommentRepository _commentRepository;
 
-    public PostService(IUserRepository userRepository, IPostRepository postRepository, ICommentRepository commentRepository, ILogger<PostService> logger)
+    public PostService(IUserRepository userRepository, IPostRepository postRepository, IPostBookmarkRepository postBookmarkRepository, ICommentRepository commentRepository, ILogger<PostService> logger)
     {
         _userRepository = userRepository;
         _postRepository = postRepository;
+        _postBookmarkRepository = postBookmarkRepository;
         _commentRepository = commentRepository;
         _logger = logger;
     }
@@ -52,6 +54,14 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
             var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
                 async post =>
                 {
@@ -70,9 +80,9 @@ public class PostService : GrpcPost.GrpcPostBase
                         post.ProfileImageId = user.ProfileImageId;
                     }
 
-                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
                     post.Liked =
-                        await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+                        await _postRepository.IsLikedByUser(post.Id, user.Id);
+                    post.Bookmarked = await _postBookmarkRepository.CountPostBookmarks(user.Id, post.Id) > 0;
 
                     return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
@@ -106,6 +116,8 @@ public class PostService : GrpcPost.GrpcPostBase
                     Surname = ""
                 };
             }
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var userId = (await _userRepository.GetUserByToken(token)).Id;
 
             var lastPostId = request.LastPostId;
             if (lastPostId == -1)
@@ -124,10 +136,8 @@ public class PostService : GrpcPost.GrpcPostBase
                     post.Surname = user.Surname;
                     post.ProfileImageId = user.ProfileImageId;
 
-                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-                    post.Liked =
-                        await _postRepository.IsLikedByUser(post.Id,
-                            (await _userRepository.GetUserByToken(token)).Id);
+                    post.Liked = await _postRepository.IsLikedByUser(post.Id, userId);
+                    post.Bookmarked = await _postBookmarkRepository.CountPostBookmarks(userId, post.Id) > 0;
 
                     return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
@@ -169,7 +179,9 @@ public class PostService : GrpcPost.GrpcPostBase
             }
 
             var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            post.Liked = await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+            var userId = (await _userRepository.GetUserByToken(token)).Id;
+            post.Liked = await _postRepository.IsLikedByUser(post.Id, userId);
+            post.Bookmarked = await _postBookmarkRepository.CountPostBookmarks(userId, post.Id) > 0;
 
             response.Data = Any.Pack(new GetPostByIdResponse { Post = post.ToPostModel() });
 

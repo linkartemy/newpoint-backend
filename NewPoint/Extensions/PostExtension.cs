@@ -23,6 +23,7 @@ public static class PostExtension
             Comments = post.Comments,
             Views = post.Views,
             Liked = post.Liked,
+            Bookmarked = post.Bookmarked,
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
         };
     }

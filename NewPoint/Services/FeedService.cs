@@ -12,14 +12,18 @@ public class FeedService : GrpcFeed.GrpcFeedBase
     private readonly ILogger<ArticleService> _logger;
     private readonly IArticleRepository _articleRepository;
     private readonly IPostRepository _postRepository;
+    private readonly IPostBookmarkRepository _postBookmarkRepository;
+    private readonly IArticleBookmarkRepository _articleBookmarkRepository;
     private readonly IUserRepository _userRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
 
-    public FeedService(IUserRepository userRepository, IArticleRepository articleRepository, IPostRepository postRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
+    public FeedService(IUserRepository userRepository, IArticleRepository articleRepository, IPostRepository postRepository, IPostBookmarkRepository postBookmarkRepository, IArticleBookmarkRepository articleBookmarkRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
     {
         _userRepository = userRepository;
         _articleRepository = articleRepository;
         _postRepository = postRepository;
+        _postBookmarkRepository = postBookmarkRepository;
+        _articleBookmarkRepository = articleBookmarkRepository;
         _articleCommentRepository = articleCommentRepository;
         _logger = logger;
     }
@@ -69,7 +73,8 @@ public class FeedService : GrpcFeed.GrpcFeedBase
                     article.Surname = author.Surname;
                     article.ProfileImageId = author.ProfileImageId;
                 }
-                article.Liked = await _articleRepository.IsLikedByUser(article.Id, (await _userRepository.GetUserByToken(token)).Id);
+                article.Liked = await _articleRepository.IsLikedByUser(article.Id, user.Id);
+                article.Bookmarked = await _articleBookmarkRepository.CountArticleBookmarks(user.Id, article.Id) > 0;
                 feedElements.Add(new FeedElement
                 {
                     Article = article.ToArticleModel().ToNullableArticle(),
@@ -92,7 +97,8 @@ public class FeedService : GrpcFeed.GrpcFeedBase
                     post.Surname = author.Surname;
                     post.ProfileImageId = author.ProfileImageId;
                 }
-                post.Liked = await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+                post.Liked = await _postRepository.IsLikedByUser(post.Id, user.Id);
+                post.Bookmarked = await _postBookmarkRepository.CountPostBookmarks(user.Id, post.Id) > 0;
                 feedElements.Add(new FeedElement
                 {
                     Article = new NullableArticle { Null = new NullValue() },
