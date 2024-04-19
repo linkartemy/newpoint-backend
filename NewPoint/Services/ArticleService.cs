@@ -33,8 +33,8 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             var authorId = request.AuthorId;
             var title = request.Title.Trim();
             var content = request.Content.Trim();
-            await _articleRepository.AddArticle(authorId, title, content);
-            response.Data = Any.Pack(new AddArticleResponse());
+            var id = await _articleRepository.AddArticle(authorId, title, content);
+            response.Data = Any.Pack(new AddArticleResponse { Id = id });
             return response;
         }
         catch (Exception)
@@ -108,22 +108,30 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                 };
             }
 
-            var articles = (await _articleRepository.GetArticlesByAuthorId(request.UserId))
-                .OrderByDescending(article => article.CreationTimestamp).Select(
-                    async article =>
-                    {
-                        article.Login = user.Login;
-                        article.Name = user.Name;
-                        article.Surname = user.Surname;
-                        article.ProfileImageId = user.ProfileImageId;
+            var lastArticleId = request.LastArticleId;
+            if (lastArticleId == -1)
+            {
+                lastArticleId = await _articleRepository.GetMaxId();
+            }
 
-                        var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-                        article.Liked =
-                            await _articleRepository.IsLikedByUser(article.Id,
-                                (await _userRepository.GetUserByToken(token)).Id);
+            var articles = (await _articleRepository.GetArticlesFromId(lastArticleId))
+            .Where(article => article.AuthorId == request.UserId)
+            .OrderByDescending(article => article.CreationTimestamp)
+            .Select(
+                async article =>
+                {
+                    article.Login = user.Login;
+                    article.Name = user.Name;
+                    article.Surname = user.Surname;
+                    article.ProfileImageId = user.ProfileImageId;
 
-                        return article.ToArticleModel();
-                    }).Select(article => article.Result).ToList();
+                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                    article.Liked =
+                        await _articleRepository.IsLikedByUser(article.Id,
+                            (await _userRepository.GetUserByToken(token)).Id);
+
+                    return article.ToArticleModel();
+                }).Select(article => article.Result).ToList();
 
             response.Data = Any.Pack(new GetArticlesByUserIdResponse { Articles = { articles } });
             return response;

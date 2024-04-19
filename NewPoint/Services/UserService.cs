@@ -358,6 +358,13 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
+            if (await _userRepository.CountByEmail(email) != 0)
+            {
+                response.Error = "User with this email already exists";
+                response.Status = 400;
+                return response;
+            }
+
             response.Data = Any.Pack(new ValidateUserResponse
             {
                 Valid = true
@@ -456,13 +463,20 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
-            var contentType = "image/jpeg";
-            new FileExtensionContentTypeProvider().TryGetContentType(name, out contentType);
+            var fileDetails = name.Split('.');
+            var extension = "jpeg";
+            if (fileDetails.Length > 1)
+            {
+                extension = fileDetails.Last();
+            }
             while (await _imageRepository.Count(name) != 0)
             {
                 name = StringHandler.GenerateString(32);
+                name += "." + extension;
             }
-            await _objectRepository.InsertObject(request.Data.ToByteArray(), S3Handler.Configuration.UserImagesBucket, name, contentType);
+            var contentType = "image/jpeg";
+            new FileExtensionContentTypeProvider().TryGetContentType(name, out contentType);
+            await _objectRepository.InsertObject(data.ToByteArray(), S3Handler.Configuration.UserImagesBucket, name, contentType);
             var id = await _imageRepository.InsertImage(name);
 
             await _userRepository.UpdateProfileImageId(user.Id, id);

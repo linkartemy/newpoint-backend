@@ -11,6 +11,7 @@ service GrpcArticle {
   rpc AddArticle (AddArticleRequest) returns (response.Response);
   rpc GetArticles (GetArticlesRequest) returns (response.Response);
   rpc GetArticlesByUserId (GetArticlesByUserIdRequest) returns (response.Response);
+  rpc GetArticlesByUserIdAfterTimestamp (GetArticlesByUserIdAfterTimestampRequest) returns (response.Response);
   rpc GetArticleById (GetArticleByIdRequest) returns (response.Response);
   rpc LikeArticle (LikeArticleRequest) returns (response.Response);
   rpc UnLikeArticle (UnLikeArticleRequest) returns (response.Response);
@@ -43,7 +44,9 @@ message AddArticleRequest {
   string content = 3;
 }
 
-message AddArticleResponse {}
+message AddArticleResponse {
+  int64 id = 1;
+}
 
 message GetArticlesRequest {}
 
@@ -53,9 +56,19 @@ message GetArticlesResponse {
 
 message GetArticlesByUserIdRequest {
   int64 user_id = 1;
+  int64 last_article_id = 2;
 }
 
 message GetArticlesByUserIdResponse {
+  repeated ArticleModel articles = 1;
+}
+
+message GetArticlesByUserIdAfterTimestampRequest {
+  int64 user_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message GetArticlesByUserIdAfterTimestampResponse {
   repeated ArticleModel articles = 1;
 }
 

@@ -32,8 +32,8 @@ public class PostService : GrpcPost.GrpcPostBase
         {
             var authorId = request.AuthorId;
             var content = request.Content.Trim();
-            await _postRepository.AddPost(authorId, content);
-            response.Data = Any.Pack(new AddPostResponse());
+            var id = await _postRepository.AddPost(authorId, content);
+            response.Data = Any.Pack(new AddPostResponse { Id = id });
             return response;
         }
         catch (Exception)
@@ -107,22 +107,30 @@ public class PostService : GrpcPost.GrpcPostBase
                 };
             }
 
-            var posts = (await _postRepository.GetPostsByAuthorId(request.UserId))
-                .OrderByDescending(post => post.CreationTimestamp).Select(
-                    async post =>
-                    {
-                        post.Login = user.Login;
-                        post.Name = user.Name;
-                        post.Surname = user.Surname;
-                        post.ProfileImageId = user.ProfileImageId;
+            var lastPostId = request.LastPostId;
+            if (lastPostId == -1)
+            {
+                lastPostId = await _postRepository.GetMaxId();
+            }
 
-                        var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-                        post.Liked =
-                            await _postRepository.IsLikedByUser(post.Id,
-                                (await _userRepository.GetUserByToken(token)).Id);
+            var posts = (await _postRepository.GetPostsFromId(lastPostId))
+            .Where(post => post.AuthorId == request.UserId)
+            .OrderByDescending(post => post.CreationTimestamp)
+            .Select(
+                async post =>
+                {
+                    post.Login = user.Login;
+                    post.Name = user.Name;
+                    post.Surname = user.Surname;
+                    post.ProfileImageId = user.ProfileImageId;
 
-                        return post.ToPostModel();
-                    }).Select(post => post.Result).ToList();
+                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                    post.Liked =
+                        await _postRepository.IsLikedByUser(post.Id,
+                            (await _userRepository.GetUserByToken(token)).Id);
+
+                    return post.ToPostModel();
+                }).Select(post => post.Result).ToList();
 
             response.Data = Any.Pack(new GetPostsByUserIdResponse { Posts = { posts } });
             return response;
@@ -316,7 +324,7 @@ public class PostService : GrpcPost.GrpcPostBase
             return response;
         }
     }
-    
+
     public override async Task<Response> DeletePost(DeletePostRequest request, ServerCallContext context)
     {
         var response = new Response
