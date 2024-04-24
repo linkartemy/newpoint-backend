@@ -12,7 +12,7 @@ public class PostRepository : IPostRepository
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
         INSERT INTO ""post"" (author_id, content, creation_timestamp)
-        VALUES (@authorId, @content, now(), @sharedId)
+        VALUES (@authorId, @content, now())
         RETURNING id;
         ",
             new
