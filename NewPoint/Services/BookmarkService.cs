@@ -89,10 +89,23 @@ public class BookmarkService : GrpcBookmark.GrpcBookmarkBase
             {
                 lastPostId = await _postBookmarkRepository.GetMaxId();
             }
-            var posts = (await _postBookmarkRepository.GetPostBookmarksByUserIdFromId(userId, lastPostId)).OrderByDescending(postBookmark => postBookmark.CreationTimestamp).Select(
+            var posts = (await _postBookmarkRepository.GetPostBookmarksByUserIdFromId(userId, lastPostId))
+            .OrderByDescending(postBookmark => postBookmark.CreationTimestamp)
+            .Select(
                 async postBookmark =>
                 {
-                    var post = await _postRepository.GetPost(postBookmark.ItemId);
+                    var post = await _postRepository.GetPost(postBookmark.ItemId) ?? new Post
+                    {
+                        Id = -1,
+                        AuthorId = -1,
+                        Content = "Deleted",
+                        Images = "",
+                        Likes = 0,
+                        Shares = 0,
+                        Comments = 0,
+                        Views = 0,
+                        CreationTimestamp = DateTime.UtcNow
+                    };
                     var user = await _userRepository.GetPostUserDataById(post.AuthorId);
                     if (user is null)
                     {
@@ -140,10 +153,25 @@ public class BookmarkService : GrpcBookmark.GrpcBookmarkBase
             {
                 lastArticleId = await _articleBookmarkRepository.GetMaxId();
             }
-            var articles = (await _articleBookmarkRepository.GetArticleBookmarksByUserIdFromId(userId, lastArticleId)).OrderByDescending(articleBookmark => articleBookmark.CreationTimestamp).Select(
+            var articles = (await _articleBookmarkRepository.GetArticleBookmarksByUserIdFromId(userId, lastArticleId))
+            .OrderByDescending(articleBookmark => articleBookmark.CreationTimestamp)
+            .Select(
                 async articleBookmark =>
                 {
                     var article = await _articleRepository.GetArticle(articleBookmark.ItemId);
+                    if (article is null)
+                    {
+                        article = new Article
+                        {
+                            Id = -1,
+                            AuthorId = -1,
+                            Title = "Deleted",
+                            Content = "Deleted",
+                            Images = "",
+                            Likes = 0,
+                            CreationTimestamp = DateTime.UtcNow
+                        };
+                    }
                     var user = await _userRepository.GetPostUserDataById(article.AuthorId);
                     if (user is null)
                     {
@@ -231,6 +259,41 @@ public class BookmarkService : GrpcBookmark.GrpcBookmarkBase
             await _articleBookmarkRepository.DeleteArticleBookmark(user.Id, request.ArticleId);
 
             response.Data = Any.Pack(new DeleteArticleBookmarkByArticleIdResponse
+            {
+                Deleted = true
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> DeleteAllBookmarksByUserId(DeleteAllBookmarksByUserIdRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            await _postBookmarkRepository.DeleteAllBookmarksByUserId(user.Id);
+            await _articleBookmarkRepository.DeleteAllBookmarksByUserId(user.Id);
+
+            response.Data = Any.Pack(new DeleteAllBookmarksByUserIdResponse
             {
                 Deleted = true
             });

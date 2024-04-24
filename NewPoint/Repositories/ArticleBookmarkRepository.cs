@@ -79,6 +79,18 @@ public class ArticleBookmarkRepository : IArticleBookmarkRepository
                 articleId = articleId
             });
     }
+
+    public async Task DeleteAllBookmarksByUserId(long userId)
+    {
+        await DatabaseHandler.Connection.ExecuteAsync($@"
+        DELETE FROM {TableName}
+        WHERE user_id = @userId;
+        ",
+            new
+            {
+                userId = userId
+            });
+    }
 }
 
 public interface IArticleBookmarkRepository
@@ -88,4 +100,5 @@ public interface IArticleBookmarkRepository
     Task<IEnumerable<Bookmark>> GetArticleBookmarksByUserIdFromId(long userId, long id);
     Task<long> GetMaxId();
     Task DeleteArticleBookmark(long userId, long articleId);
+    Task DeleteAllBookmarksByUserId(long userId);
 }

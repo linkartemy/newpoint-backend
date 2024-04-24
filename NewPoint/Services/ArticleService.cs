@@ -11,14 +11,16 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
 {
     private readonly ILogger<ArticleService> _logger;
     private readonly IArticleRepository _articleRepository;
+    private readonly IArticleShareRepository _articleShareRepository;
     private readonly IArticleBookmarkRepository _articleBookmarkRepository;
     private readonly IUserRepository _userRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
 
-    public ArticleService(IUserRepository userRepository, IArticleRepository articleRepository, IArticleBookmarkRepository articleBookmarkRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
+    public ArticleService(IUserRepository userRepository, IArticleRepository articleRepository, IArticleShareRepository articleShareRepository, IArticleBookmarkRepository articleBookmarkRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
     {
         _userRepository = userRepository;
         _articleRepository = articleRepository;
+        _articleShareRepository = articleShareRepository;
         _articleBookmarkRepository = articleBookmarkRepository;
         _articleCommentRepository = articleCommentRepository;
         _logger = logger;
@@ -290,6 +292,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                 return response;
             }
 
+            await _articleShareRepository.AddArticleShare(user.Id, request.ArticleId);
             await _articleRepository.SetSharesById(request.ArticleId,
                 await _articleRepository.GetSharesById(request.ArticleId) + 1);
 

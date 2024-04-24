@@ -12,16 +12,18 @@ public class FeedService : GrpcFeed.GrpcFeedBase
     private readonly ILogger<ArticleService> _logger;
     private readonly IArticleRepository _articleRepository;
     private readonly IPostRepository _postRepository;
+    private readonly IPostShareRepository _postShareRepository;
     private readonly IPostBookmarkRepository _postBookmarkRepository;
     private readonly IArticleBookmarkRepository _articleBookmarkRepository;
     private readonly IUserRepository _userRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
 
-    public FeedService(IUserRepository userRepository, IArticleRepository articleRepository, IPostRepository postRepository, IPostBookmarkRepository postBookmarkRepository, IArticleBookmarkRepository articleBookmarkRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
+    public FeedService(IUserRepository userRepository, IArticleRepository articleRepository, IPostRepository postRepository, IPostShareRepository postShareRepository, IPostBookmarkRepository postBookmarkRepository, IArticleBookmarkRepository articleBookmarkRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
     {
         _userRepository = userRepository;
         _articleRepository = articleRepository;
         _postRepository = postRepository;
+        _postShareRepository = postShareRepository;
         _postBookmarkRepository = postBookmarkRepository;
         _articleBookmarkRepository = articleBookmarkRepository;
         _articleCommentRepository = articleCommentRepository;

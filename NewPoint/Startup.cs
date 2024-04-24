@@ -51,6 +51,8 @@ public class Startup
         // services.AddSingleton<IPostService, PostService>();
         services.AddSingleton<IPostRepository, PostRepository>();
         services.AddSingleton<IArticleRepository, ArticleRepository>();
+        services.AddSingleton<IPostShareRepository, PostShareRepository>();
+        services.AddSingleton<IArticleShareRepository, ArticleShareRepository>();
         // services.AddSingleton<ICodeService, CodeService>();
         services.AddSingleton<ICodeRepository, CodeRepository>();
         // services.AddSingleton<ICommentService, CommentService>();

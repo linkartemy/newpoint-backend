@@ -93,9 +93,9 @@ public class ArticleRepository : IArticleRepository
         return id;
     }
 
-    public async Task<Article> GetArticle(long articleId)
+    public async Task<Article?> GetArticle(long articleId)
     {
-        var article = await DatabaseHandler.Connection.QueryFirstAsync<Article>(@"
+        var article = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<Article?>(@"
         SELECT
             id AS Id,
             author_id AS AuthorId,
@@ -278,7 +278,7 @@ public interface IArticleRepository
     Task<IEnumerable<Article>> GetArticlesByAuthorId(long authorId);
     Task<IEnumerable<Article>> GetArticlesFromId(long id);
     Task<long> GetMaxId();
-    Task<Article> GetArticle(long articleId);
+    Task<Article?> GetArticle(long articleId);
     Task<bool> IsLikedByUser(long articleId, long userId);
     Task<int> GetLikesById(long articleId);
     Task SetLikesById(long articleId, int likes);

@@ -6,17 +6,19 @@ namespace NewPoint.Repositories;
 
 public class PostRepository : IPostRepository
 {
+    private const string TableName = "post";
+
     public async Task<long> AddPost(long authorId, string content)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
         INSERT INTO ""post"" (author_id, content, creation_timestamp)
-        VALUES (@authorId, @content, now())
+        VALUES (@authorId, @content, now(), @sharedId)
         RETURNING id;
         ",
             new
             {
                 authorId = authorId,
-                content = content,
+                content = content
             });
         return id;
     }
@@ -88,9 +90,9 @@ public class PostRepository : IPostRepository
         return id;
     }
 
-    public async Task<Post> GetPost(long postId)
+    public async Task<Post?> GetPost(long postId)
     {
-        var post = await DatabaseHandler.Connection.QueryFirstAsync<Post>(@"
+        var post = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<Post?>(@"
         SELECT 
             id AS Id,
             author_id AS AuthorId,
@@ -272,7 +274,7 @@ public interface IPostRepository
     Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId);
     Task<IEnumerable<Post>> GetPostsFromId(long id);
     Task<long> GetMaxId();
-    Task<Post> GetPost(long postId);
+    Task<Post?> GetPost(long postId);
     Task<bool> IsLikedByUser(long postId, long userId);
     Task<int> GetLikesById(long postId);
     Task SetLikesById(long postId, int likes);
