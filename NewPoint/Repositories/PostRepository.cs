@@ -6,10 +6,13 @@ namespace NewPoint.Repositories;
 
 public class PostRepository : IPostRepository
 {
+    public readonly string TableName = "post";
+    public readonly string LikeTableName = "post_like";
+
     public async Task<long> AddPost(long authorId, string content)
     {
-        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""post"" (author_id, content, creation_timestamp)
+        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
+        INSERT INTO ${TableName} (author_id, content, creation_timestamp)
         VALUES (@authorId, @content, now())
         RETURNING id;
         ",
@@ -23,7 +26,7 @@ public class PostRepository : IPostRepository
 
     public async Task<IEnumerable<Post>> GetPosts()
     {
-        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
+        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@$"
         SELECT
             id AS Id,
             author_id AS AuthorId,
@@ -34,14 +37,14 @@ public class PostRepository : IPostRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ""post"";
+        FROM ${TableName};
         ");
         return reader;
     }
 
     public async Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId)
     {
-        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
+        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@$"
         SELECT
             id AS Id,
             author_id AS AuthorId,
@@ -52,7 +55,7 @@ public class PostRepository : IPostRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ""post""
+        FROM ${TableName}
         WHERE author_id=@authorId;
         ",
             new { authorId });
@@ -61,7 +64,7 @@ public class PostRepository : IPostRepository
 
     public async Task<IEnumerable<Post>> GetPostsFromId(long id)
     {
-        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@"
+        var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@$"
         SELECT 
             id AS Id,
             author_id AS AuthorId,
@@ -72,7 +75,7 @@ public class PostRepository : IPostRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ""post""
+        FROM ${TableName}
         WHERE id <= @id
         ORDER BY id DESC
         LIMIT 10
@@ -83,14 +86,14 @@ public class PostRepository : IPostRepository
 
     public async Task<long> GetMaxId()
     {
-        var id = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@"
-        SELECT MAX(id) FROM ""post"";");
+        var id = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@$"
+        SELECT MAX(id) FROM ${TableName};");
         return id;
     }
 
     public async Task<Post> GetPost(long postId)
     {
-        var post = await DatabaseHandler.Connection.QueryFirstAsync<Post>(@"
+        var post = await DatabaseHandler.Connection.QueryFirstAsync<Post>(@$"
         SELECT 
             id AS Id,
             author_id AS AuthorId,
@@ -101,7 +104,7 @@ public class PostRepository : IPostRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ""post""
+        FROM ${TableName}
         WHERE id=@postId;
         ",
             new { postId });
@@ -110,8 +113,8 @@ public class PostRepository : IPostRepository
 
     public async Task<bool> IsLikedByUser(long postId, long userId)
     {
-        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
-        SELECT COUNT(1) FROM ""post_like""
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
+        SELECT COUNT(1) FROM ${LikeTableName}
         WHERE
             post_id=@postId AND
             user_id=@userId;
@@ -123,10 +126,10 @@ public class PostRepository : IPostRepository
 
     public async Task<int> GetLikesById(long postId)
     {
-        var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
+        var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             likes
-        FROM ""post""
+        FROM ${TableName}
         WHERE id=@postId;
         ",
             new { postId });
@@ -135,9 +138,9 @@ public class PostRepository : IPostRepository
 
     public async Task SetLikesById(long postId, int likes)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ""post""
+            ${TableName}
         SET likes=@likes
         WHERE id=@postId;
         ",
@@ -146,8 +149,8 @@ public class PostRepository : IPostRepository
 
     public async Task<long> InsertPostLike(long postId, long userId)
     {
-        var likeId = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""post_like"" (post_id, user_id)
+        var likeId = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
+        INSERT INTO ${LikeTableName} (post_id, user_id)
         VALUES (@postId, @userId)
         RETURNING id;
         ",
@@ -161,8 +164,8 @@ public class PostRepository : IPostRepository
 
     public async Task DeletePostLike(long postId, long userId)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
-        DELETE FROM ""post_like""
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
+        DELETE FROM ${LikeTableName}
         WHERE post_id=@postId AND user_id=@userId;
         ",
             new
@@ -174,8 +177,8 @@ public class PostRepository : IPostRepository
 
     public async Task DeletePostLikes(long postId)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
-        DELETE FROM ""post_like""
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
+        DELETE FROM ${LikeTableName}
         WHERE post_id=@postId;
         ",
             new
@@ -186,10 +189,10 @@ public class PostRepository : IPostRepository
 
     public async Task<int> GetSharesById(long postId)
     {
-        var shares = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
+        var shares = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             shares
-        FROM ""post""
+        FROM ${TableName}
         WHERE id=@postId;
         ",
             new { postId });
@@ -198,9 +201,9 @@ public class PostRepository : IPostRepository
 
     public async Task SetSharesById(long postId, int shares)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ""post""
+            ${TableName}
         SET shares=@shares
         WHERE id=@postId;
         ",
@@ -209,10 +212,10 @@ public class PostRepository : IPostRepository
 
     public async Task<int> GetCommentsById(long postId)
     {
-        var comments = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
+        var comments = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             comments
-        FROM ""post""
+        FROM ${TableName}
         WHERE id=@postId;
         ",
             new { postId });
@@ -221,9 +224,9 @@ public class PostRepository : IPostRepository
 
     public async Task SetCommentsById(long postId, int comments)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ""post""
+            ${TableName}
         SET comments=@comments
         WHERE id=@postId;
         ",
@@ -232,10 +235,10 @@ public class PostRepository : IPostRepository
 
     public async Task<int> GetPostViewsById(long postId)
     {
-        var views = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@"
+        var views = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             views
-        FROM ""post""
+        FROM ${TableName}
         WHERE id=@postId;
         ",
             new { postId });
@@ -244,9 +247,9 @@ public class PostRepository : IPostRepository
 
     public async Task SetPostViewsById(long postId, int views)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ""post""
+            ${TableName}
         SET views=@views
         WHERE id=@postId;
         ",
@@ -255,8 +258,8 @@ public class PostRepository : IPostRepository
 
     public async Task DeletePost(long postId)
     {
-        await DatabaseHandler.Connection.ExecuteAsync(@"
-        DELETE FROM ""post"" WHERE id = @postId;
+        await DatabaseHandler.Connection.ExecuteAsync(@$"
+        DELETE FROM ${TableName} WHERE id = @postId;
         ",
             new
             {

@@ -6,10 +6,12 @@ namespace NewPoint.Repositories;
 
 internal class FollowRepository : IFollowRepository
 {
+    public readonly string TableName = "follow";
+
     public async Task<bool> FollowExists(long followerId, long followingId)
     {
-        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
-        SELECT COUNT(1) FROM ""follow""
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
+        SELECT COUNT(1) FROM ${TableName}
         WHERE follower_id=@followerId AND following_id=@followingId;
         ",
             new { followerId, followingId });
@@ -19,8 +21,8 @@ internal class FollowRepository : IFollowRepository
 
     public async Task InsertFollow(long followerId, long followingId)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""follow"" (follower_id, following_id, timestamp)
+        await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
+        INSERT INTO ${TableName} (follower_id, following_id, timestamp)
         VALUES (@followerId, @followingId, now())
         RETURNING id;
         ",
@@ -33,8 +35,8 @@ internal class FollowRepository : IFollowRepository
 
     public async Task<bool> DeleteFollow(long followerId, long followingId)
     {
-        await DatabaseHandler.Connection.ExecuteAsync(@"
-        DELETE FROM ""follow"" WHERE follower_id = @followerId AND following_id = @followingId;
+        await DatabaseHandler.Connection.ExecuteAsync(@$"
+        DELETE FROM ${TableName} WHERE follower_id = @followerId AND following_id = @followingId;
         ",
             new
             {
@@ -46,8 +48,8 @@ internal class FollowRepository : IFollowRepository
 
     public async Task<bool> DeleteFollowsByUserId(long userId)
     {
-        await DatabaseHandler.Connection.QueryFirstAsync<string>(@"
-        DELETE FROM ""follow"" WHERE follower_id = @userId OR following_id = @userId;
+        await DatabaseHandler.Connection.QueryFirstAsync<string>(@$"
+        DELETE FROM ${TableName} WHERE follower_id = @userId OR following_id = @userId;
         ",
             new
             {

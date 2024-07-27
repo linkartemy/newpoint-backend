@@ -6,10 +6,13 @@ namespace NewPoint.Repositories;
 
 public class ArticleCommentRepository : IArticleCommentRepository
 {
+    public readonly string TableName = "article_comment";
+    public readonly string LikeTableName = "article_comment_like";
+
     public async Task<long> Insert(long articleId, long userId, string content)
     {
-        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""article_comment"" (article_id, user_id, content)
+        var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
+        INSERT INTO ${TableName} (article_id, user_id, content)
         VALUES (@articleId, @userId, @content)
         RETURNING id;
         ",
@@ -24,8 +27,8 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task Delete(long commentId)
     {
-        await DatabaseHandler.Connection.ExecuteAsync(@"
-        DELETE FROM ""article_comment"" WHERE id = @commentId;
+        await DatabaseHandler.Connection.ExecuteAsync(@$"
+        DELETE FROM ${TableName} WHERE id = @commentId;
         ",
             new
             {
@@ -35,10 +38,10 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task<IEnumerable<ArticleComment?>> GetCommentsByArticleId(long articleId)
     {
-        var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(@"
+        var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(@$"
         SELECT 
             *
-        FROM ""article_comment""
+        FROM ${TableName}
         WHERE article_id=@articleId;
         ",
             new { articleId });
@@ -47,7 +50,7 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task<ArticleComment?> GetCommentById(long commentId)
     {
-        var comment = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<ArticleComment?>(@"
+        var comment = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<ArticleComment?>(@$"
         SELECT 
             id AS id,
             user_id AS UserId,
@@ -55,7 +58,7 @@ public class ArticleCommentRepository : IArticleCommentRepository
             content AS Content,
             likes AS Likes,
             creation_timestamp as CreationTimestamp
-        FROM ""article_comment""
+        FROM ${TableName}
         WHERE id=@commentId;
         ",
             new { commentId });
@@ -64,8 +67,8 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task<bool> IsLikedByUser(long commentId, long userId)
     {
-        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@"
-        SELECT COUNT(1) FROM ""article_comment_like""
+        var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
+        SELECT COUNT(1) FROM ${LikeTableName}
         WHERE
             comment_id=@commentId AND
             user_id=@userId;
@@ -77,10 +80,10 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task<long> GetLikesById(long commentId)
     {
-        var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@"
+        var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<long>(@$"
         SELECT
             likes
-        FROM ""article_comment""
+        FROM ${TableName}
         WHERE id=@commentId;
         ",
             new { commentId });
@@ -89,9 +92,9 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task SetLikesById(long commentId, long likes)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ""article_comment""
+            ${TableName}
         SET likes=@likes
         WHERE id=@commentId;
         ",
@@ -100,8 +103,8 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task<long> InsertCommentLike(long commentId, long userId)
     {
-        var likeId = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@"
-        INSERT INTO ""article_comment_like"" (comment_id, user_id)
+        var likeId = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
+        INSERT INTO ${LikeTableName} (comment_id, user_id)
         VALUES (@commentId, @userId)
         RETURNING id;
         ",
@@ -115,8 +118,8 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task DeleteCommentLike(long commentId, long userId)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
-        DELETE FROM ""article_comment_like""
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
+        DELETE FROM ${LikeTableName}
         WHERE comment_id=@commentId AND user_id=@userId;
         ",
             new
@@ -128,8 +131,8 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task DeleteCommentLikes(long commentId)
     {
-        await DatabaseHandler.Connection.ExecuteScalarAsync(@"
-        DELETE FROM ""article_comment_like""
+        await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
+        DELETE FROM ${LikeTableName}
         WHERE comment_id=@commentId;
         ",
             new
