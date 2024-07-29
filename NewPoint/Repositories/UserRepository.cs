@@ -11,7 +11,7 @@ internal class UserRepository : IUserRepository
     public async Task<int> CountWithId(long id)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
-        SELECT COUNT(1) FROM ${TableName}
+        SELECT COUNT(1) FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -22,7 +22,7 @@ internal class UserRepository : IUserRepository
     public async Task<int> CountByLogin(string login)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
-        SELECT COUNT(1) FROM ${TableName}
+        SELECT COUNT(1) FROM {TableName}
         WHERE login=@login;
         ",
             new { login });
@@ -33,7 +33,7 @@ internal class UserRepository : IUserRepository
     public async Task<int> CountByEmail(string email)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
-        SELECT COUNT(1) FROM ${TableName}
+        SELECT COUNT(1) FROM {TableName}
         WHERE email=@email;
         ",
             new { email });
@@ -44,7 +44,7 @@ internal class UserRepository : IUserRepository
     public async Task InsertUser(User user, string token)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
-        INSERT INTO ${TableName} (login, password_hash, name, surname, email, phone, birth_date, last_login_timestamp, ip, token, registration_timestamp)
+        INSERT INTO {TableName} (login, password_hash, name, surname, email, phone, birth_date, last_login_timestamp, ip, token, registration_timestamp)
         VALUES (@login, @passwordHash, @name, @surname, @email, @phone, @birthDate, @lastLoginTimestamp, @ip, @token, now())
         RETURNING id;
         ",
@@ -69,7 +69,7 @@ internal class UserRepository : IUserRepository
         var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@$"
         SELECT
             *
-        FROM ${TableName}
+        FROM {TableName}
         WHERE login=@login;
         ",
             new { login });
@@ -82,7 +82,7 @@ internal class UserRepository : IUserRepository
         var user = await DatabaseHandler.Connection.QueryFirstAsync<User>(@$"
         SELECT
             *
-        FROM ${TableName}
+        FROM {TableName}
         WHERE email=@email;
         ",
             new { email });
@@ -95,7 +95,7 @@ internal class UserRepository : IUserRepository
         var token = await DatabaseHandler.Connection.QueryFirstAsync<string>(@$"
         SELECT
             token
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -107,7 +107,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET token=@token
         WHERE id=@id;
         ",
@@ -119,7 +119,7 @@ internal class UserRepository : IUserRepository
         var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@$"
         SELECT
             *
-        FROM ${TableName}
+        FROM {TableName}
         WHERE token=@token;
         ",
             new { token });
@@ -132,7 +132,7 @@ internal class UserRepository : IUserRepository
         var user = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<User>(@$"
         SELECT
             login, name, surname, profile_image_id AS ProfileImageId
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -145,7 +145,7 @@ internal class UserRepository : IUserRepository
         var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@$"
         SELECT
             password_hash
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -158,7 +158,7 @@ internal class UserRepository : IUserRepository
         var hashedPassword = await DatabaseHandler.Connection.QueryFirstAsync<string>(@$"
         SELECT
             password_hash
-        FROM ${TableName}
+        FROM {TableName}
         WHERE login=@login;
         ",
             new { login });
@@ -170,7 +170,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET name=@name,
             surname=@surname,
             description=@description,
@@ -193,7 +193,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET profile_image_id=@profileImageId
         WHERE id=@id;
         ",
@@ -208,7 +208,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET email=@email
         WHERE id=@id;
         ",
@@ -223,7 +223,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET password_hash=@hashedPassword
         WHERE id=@id;
         ",
@@ -252,7 +252,7 @@ internal class UserRepository : IUserRepository
             registration_timestamp as RegistrationTimestamp,
             followers as Followers,
             following as Following
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -264,7 +264,7 @@ internal class UserRepository : IUserRepository
         var following = await DatabaseHandler.Connection.QueryFirstAsync<int>(@$"
         SELECT
             following
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@userId;
         ",
             new { userId });
@@ -276,7 +276,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET following=@following
         WHERE id=@userId;
         ",
@@ -292,7 +292,7 @@ internal class UserRepository : IUserRepository
         var followers = await DatabaseHandler.Connection.QueryFirstAsync<int>(@$"
         SELECT
             followers
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@userId;
         ",
             new { userId });
@@ -304,7 +304,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET followers=@followers
         WHERE id=@userId;
         ",
@@ -320,7 +320,7 @@ internal class UserRepository : IUserRepository
         var twoFactor = await DatabaseHandler.Connection.QueryFirstAsync<bool>(@$"
         SELECT
             two_factor
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -332,7 +332,7 @@ internal class UserRepository : IUserRepository
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET two_factor=@twoFactor
         WHERE id=@id;
         ",

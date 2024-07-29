@@ -11,7 +11,7 @@ internal class ImageRepository : IImageRepository
     public async Task<bool> ImageExists(long id)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
-        SELECT COUNT(1) FROM ${TableName}
+        SELECT COUNT(1) FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -22,7 +22,7 @@ internal class ImageRepository : IImageRepository
     public async Task<int> Count(string name)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
-        SELECT COUNT(1) FROM ${TableName}
+        SELECT COUNT(1) FROM {TableName}
         WHERE name=@name;
         ",
             new { name });
@@ -33,7 +33,7 @@ internal class ImageRepository : IImageRepository
     public async Task<string> GetImageNameById(long id)
     {
         var name = await DatabaseHandler.Connection.QueryFirstAsync<string>(@$"
-        SELECT name FROM ${TableName}
+        SELECT name FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
@@ -44,7 +44,7 @@ internal class ImageRepository : IImageRepository
     public async Task<long> InsertImage(string name)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
-        INSERT INTO ${TableName} (name)
+        INSERT INTO {TableName} (name)
         VALUES (@name)
         RETURNING id;
         ",

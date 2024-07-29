@@ -7,11 +7,12 @@ namespace NewPoint.Repositories;
 public class ArticleRepository : IArticleRepository
 {
     public readonly string TableName = "article";
+    public readonly string LikeTableName = "article_like";
 
     public async Task<long> AddArticle(long authorId, string title, string content)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
-        INSERT INTO ${TableName} (author_id, title, content, creation_timestamp)
+        INSERT INTO {TableName} (author_id, title, content, creation_timestamp)
         VALUES (@authorId, @title, @content, now())
         RETURNING id;
         ",
@@ -38,7 +39,7 @@ public class ArticleRepository : IArticleRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ${TableName};
+        FROM {TableName};
         ");
         return reader;
     }
@@ -57,7 +58,7 @@ public class ArticleRepository : IArticleRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id <= @id
         ORDER BY id DESC
         LIMIT 10;
@@ -80,7 +81,7 @@ public class ArticleRepository : IArticleRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ${TableName}
+        FROM {TableName}
         WHERE author_id=@authorId;
         ",
             new { authorId });
@@ -90,7 +91,7 @@ public class ArticleRepository : IArticleRepository
     public async Task<long> GetMaxId()
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
-        SELECT MAX(id) FROM ${TableName};
+        SELECT MAX(id) FROM {TableName};
         ");
         return id;
     }
@@ -109,7 +110,7 @@ public class ArticleRepository : IArticleRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@articleId;
         ",
             new { articleId });
@@ -119,7 +120,7 @@ public class ArticleRepository : IArticleRepository
     public async Task<bool> IsLikedByUser(long articleId, long userId)
     {
         var counter = await DatabaseHandler.Connection.ExecuteScalarAsync<int>(@$"
-        SELECT COUNT(1) FROM ""article_like""
+        SELECT COUNT(1) FROM {LikeTableName}
         WHERE
             article_id=@articleId AND
             user_id=@userId;
@@ -134,7 +135,7 @@ public class ArticleRepository : IArticleRepository
         var likes = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             likes
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@articleId;
         ",
             new { articleId });
@@ -145,7 +146,7 @@ public class ArticleRepository : IArticleRepository
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET likes=@likes
         WHERE id=@articleId;
         ",
@@ -155,7 +156,7 @@ public class ArticleRepository : IArticleRepository
     public async Task<long> InsertArticleLike(long articleId, long userId)
     {
         var likeId = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
-        INSERT INTO ""article_like"" (article_id, user_id)
+        INSERT INTO {LikeTableName} (article_id, user_id)
         VALUES (@articleId, @userId)
         RETURNING id;
         ",
@@ -170,7 +171,7 @@ public class ArticleRepository : IArticleRepository
     public async Task DeleteArticleLike(long articleId, long userId)
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
-        DELETE FROM ""article_like""
+        DELETE FROM {LikeTableName}
         WHERE article_id=@articleId AND user_id=@userId;
         ",
             new
@@ -183,7 +184,7 @@ public class ArticleRepository : IArticleRepository
     public async Task DeleteArticleLikes(long articleId)
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
-        DELETE FROM ""article_like""
+        DELETE FROM {LikeTableName}
         WHERE article_id=@articleId;
         ",
             new
@@ -197,7 +198,7 @@ public class ArticleRepository : IArticleRepository
         var shares = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             shares
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@articleId;
         ",
             new { articleId });
@@ -208,7 +209,7 @@ public class ArticleRepository : IArticleRepository
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET shares=@shares
         WHERE id=@articleId;
         ",
@@ -220,7 +221,7 @@ public class ArticleRepository : IArticleRepository
         var comments = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             comments
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@articleId;
         ",
             new { articleId });
@@ -231,7 +232,7 @@ public class ArticleRepository : IArticleRepository
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET comments=@comments
         WHERE id=@articleId;
         ",
@@ -243,7 +244,7 @@ public class ArticleRepository : IArticleRepository
         var views = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<int>(@$"
         SELECT
             views
-        FROM ${TableName}
+        FROM {TableName}
         WHERE id=@articleId;
         ",
             new { articleId });
@@ -254,7 +255,7 @@ public class ArticleRepository : IArticleRepository
     {
         await DatabaseHandler.Connection.ExecuteScalarAsync(@$"
         UPDATE
-            ${TableName}
+            {TableName}
         SET views=@views
         WHERE id=@articleId;
         ",
@@ -264,7 +265,7 @@ public class ArticleRepository : IArticleRepository
     public async Task DeleteArticle(long articleId)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
-        DELETE FROM ${TableName} WHERE id = @articleId;
+        DELETE FROM {TableName} WHERE id = @articleId;
         ",
             new
             {
