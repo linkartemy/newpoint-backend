@@ -1,21 +1,25 @@
 ﻿using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using ProjectApi.CustomOptions;
 
 namespace DatabaseMigrations;
 
 class Program
 {
     private static IConfigurationRoot? _configuration;
-    
+
     static void Main(string[] args)
     {
         _configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetParent(Environment.ProcessPath).Parent.Parent.Parent.FullName)
             .AddJsonFile("appsettings.json", false, true)
             .Build();
-        
-        var connectionString = _configuration!.GetConnectionString("Postgres");
+
+        var vaultOptions = _configuration.GetSection("Vault").Get<VaultOptions>();
+        var vaultService = new VaultConfigurationProvider(vaultOptions);
+        vaultService.Load();
+        var connectionString = vaultService.ConnectionString;
 
         using var serviceProvider = new ServiceCollection()
             .AddFluentMigratorCore()
