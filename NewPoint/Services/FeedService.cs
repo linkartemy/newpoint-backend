@@ -42,14 +42,7 @@ public class FeedService : GrpcFeed.GrpcFeedBase
             {
                 lastPostId = await _postRepository.GetMaxId();
             }
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Status = 404;
-                response.Error = "User not found";
-                return response;
-            }
+            var user = context.RetrieveUser();
             var feedElements = new List<FeedElement>();
             var articles = await _articleRepository.GetArticlesFromId(lastArticleId);
             var posts = await _postRepository.GetPostsFromId(lastPostId);
@@ -69,7 +62,7 @@ public class FeedService : GrpcFeed.GrpcFeedBase
                     article.Surname = author.Surname;
                     article.ProfileImageId = author.ProfileImageId;
                 }
-                article.Liked = await _articleRepository.IsLikedByUser(article.Id, (await _userRepository.GetUserByToken(token)).Id);
+                article.Liked = await _articleRepository.IsLikedByUser(article.Id, user.Id);
                 feedElements.Add(new FeedElement
                 {
                     Article = article.ToArticleModel().ToNullableArticle(),
@@ -92,7 +85,7 @@ public class FeedService : GrpcFeed.GrpcFeedBase
                     post.Surname = author.Surname;
                     post.ProfileImageId = author.ProfileImageId;
                 }
-                post.Liked = await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+                post.Liked = await _postRepository.IsLikedByUser(post.Id, user.Id);
                 feedElements.Add(new FeedElement
                 {
                     Article = new NullableArticle { Null = new NullValue() },

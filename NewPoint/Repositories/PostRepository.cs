@@ -6,8 +6,8 @@ namespace NewPoint.Repositories;
 
 public class PostRepository : IPostRepository
 {
-    public readonly string TableName = "post";
-    public readonly string LikeTableName = "post_like";
+    public readonly string TableName = @"""post""";
+    public readonly string LikeTableName = @"""post_like""";
 
     public async Task<long> AddPost(long authorId, string content)
     {

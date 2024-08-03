@@ -6,7 +6,7 @@ namespace NewPoint.Repositories;
 
 internal class UserRepository : IUserRepository
 {
-    public readonly string TableName = "user";
+    public readonly string TableName = @"""user""";
 
     public async Task<int> CountWithId(long id)
     {

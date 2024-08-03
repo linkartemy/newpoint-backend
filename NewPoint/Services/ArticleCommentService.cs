@@ -1,6 +1,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using NewPoint.Handlers;
+using NewPoint.Models;
 using NewPoint.Repositories;
 
 namespace NewPoint.Services;
@@ -87,14 +88,7 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.UserState["user"] as User;
 
             await _articleRepository.SetCommentsById(request.ArticleId,
                 await _articleRepository.GetCommentsById(request.ArticleId) + 1);
@@ -123,14 +117,7 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.UserState["user"] as User;
 
             var comment = await _articleCommentRepository.GetCommentById(request.CommentId);
             if (comment == null)
@@ -171,14 +158,7 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.UserState["user"] as User;
 
             await _articleCommentRepository.SetLikesById(request.CommentId,
                 await _articleCommentRepository.GetLikesById(request.CommentId) + 1);
@@ -207,14 +187,7 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.UserState["user"] as User;
 
             await _articleCommentRepository.SetLikesById(request.CommentId,
                 await _articleCommentRepository.GetLikesById(request.CommentId) - 1);

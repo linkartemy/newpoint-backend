@@ -1,5 +1,6 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using NewPoint.Extensions;
 using NewPoint.Handlers;
 using NewPoint.Repositories;
 
@@ -34,8 +35,8 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 .OrderByDescending(post => post.CreationTimestamp).Select(
                     async comment =>
                     {
-                        var user = await _userRepository.GetPostUserDataById(comment.UserId);
-                        if (user is null)
+                        var commentAuthor = await _userRepository.GetPostUserDataById(comment.UserId);
+                        if (commentAuthor is null)
                         {
                             comment.Login = "Unknown";
                             comment.Name = "Unknown";
@@ -43,20 +44,26 @@ public class CommentService : GrpcComment.GrpcCommentBase
                         }
                         else
                         {
-                            comment.Login = user.Login;
-                            comment.Name = user.Name;
-                            comment.Surname = user.Surname;
+                            comment.Login = commentAuthor.Login;
+                            comment.Name = commentAuthor.Name;
+                            comment.Surname = commentAuthor.Surname;
                         }
 
-                        var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                        var user = context.RetrieveUser();
                         comment.Liked =
                             await _commentRepository.IsLikedByUser(comment.Id,
-                                (await _userRepository.GetUserByToken(token)).Id);
+                                user.Id);
 
                         return new CommentModel
                         {
-                            Id = comment.Id, UserId = comment.UserId, Login = comment.Login, Name = comment.Name, Surname = comment.Surname,
-                            Content = comment.Content, Likes = comment.Likes, Liked = comment.Liked,
+                            Id = comment.Id,
+                            UserId = comment.UserId,
+                            Login = comment.Login,
+                            Name = comment.Name,
+                            Surname = comment.Surname,
+                            Content = comment.Content,
+                            Likes = comment.Likes,
+                            Liked = comment.Liked,
                             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
                         };
                         ;
@@ -81,14 +88,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {    
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _postRepository.SetCommentsById(request.PostId,
                 await _postRepository.GetCommentsById(request.PostId) + 1);
@@ -108,7 +108,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
             return response;
         }
     }
-    
+
     public override async Task<Response> DeleteComment(DeleteCommentRequest request, ServerCallContext context)
     {
         var response = new Response
@@ -117,15 +117,6 @@ public class CommentService : GrpcComment.GrpcCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {    
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var comment = await _commentRepository.GetCommentById(request.CommentId);
             if (comment == null)
             {
@@ -165,14 +156,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _commentRepository.SetLikesById(request.CommentId,
                 await _commentRepository.GetLikesById(request.CommentId) + 1);
@@ -201,14 +185,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _commentRepository.SetLikesById(request.CommentId,
                 await _commentRepository.GetLikesById(request.CommentId) - 1);

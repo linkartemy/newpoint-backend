@@ -55,8 +55,8 @@ public class PostService : GrpcPost.GrpcPostBase
             var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
                 async post =>
                 {
-                    var user = await _userRepository.GetPostUserDataById(post.AuthorId);
-                    if (user is null)
+                    var postAuthor = await _userRepository.GetPostUserDataById(post.AuthorId);
+                    if (postAuthor is null)
                     {
                         post.Login = "Unknown";
                         post.Name = "Unknown";
@@ -64,15 +64,15 @@ public class PostService : GrpcPost.GrpcPostBase
                     }
                     else
                     {
-                        post.Login = user.Login;
-                        post.Name = user.Name;
-                        post.Surname = user.Surname;
-                        post.ProfileImageId = user.ProfileImageId;
+                        post.Login = postAuthor.Login;
+                        post.Name = postAuthor.Name;
+                        post.Surname = postAuthor.Surname;
+                        post.ProfileImageId = postAuthor.ProfileImageId;
                     }
 
-                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                    var user = context.RetrieveUser();
                     post.Liked =
-                        await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+                        await _postRepository.IsLikedByUser(post.Id, user.Id);
 
                     return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
@@ -124,10 +124,9 @@ public class PostService : GrpcPost.GrpcPostBase
                     post.Surname = user.Surname;
                     post.ProfileImageId = user.ProfileImageId;
 
-                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
                     post.Liked =
                         await _postRepository.IsLikedByUser(post.Id,
-                            (await _userRepository.GetUserByToken(token)).Id);
+                            context.RetrieveUser().Id);
 
                     return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
@@ -168,8 +167,7 @@ public class PostService : GrpcPost.GrpcPostBase
                 post.ProfileImageId = user.ProfileImageId;
             }
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            post.Liked = await _postRepository.IsLikedByUser(post.Id, (await _userRepository.GetUserByToken(token)).Id);
+            post.Liked = await _postRepository.IsLikedByUser(post.Id, context.RetrieveUser().Id);
 
             response.Data = Any.Pack(new GetPostByIdResponse { Post = post.ToPostModel() });
 
@@ -191,14 +189,7 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _postRepository.SetLikesById(request.PostId, await _postRepository.GetLikesById(request.PostId) + 1);
             await _postRepository.InsertPostLike(request.PostId, user.Id);
@@ -226,14 +217,7 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _postRepository.SetLikesById(request.PostId, await _postRepository.GetLikesById(request.PostId) - 1);
             await _postRepository.DeletePostLike(request.PostId, user.Id);
@@ -261,15 +245,6 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             await _postRepository.SetSharesById(request.PostId,
                 await _postRepository.GetSharesById(request.PostId) + 1);
 
@@ -296,15 +271,6 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var views = await _postRepository.GetPostViewsById(request.PostId) + 1;
 
             await _postRepository.SetPostViewsById(request.PostId,
@@ -333,15 +299,6 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var comments = await _commentRepository.GetCommentsByPostId(request.PostId);
             foreach (var comment in comments)
             {

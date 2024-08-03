@@ -163,6 +163,8 @@ public class UserService : GrpcUser.GrpcUserBase
 
             if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false) date = DateTime.Today;
 
+            var profileImageId = await _imageRepository.GetImageIdByName("0.png");
+
             var user = new User
             {
                 Login = login,
@@ -171,6 +173,7 @@ public class UserService : GrpcUser.GrpcUserBase
                 Email = email,
                 Phone = phone,
                 BirthDate = date,
+                ProfileImageId = profileImageId,
                 IP = context.Peer,
                 LastLoginTimestamp = DateTime.Now
             };
@@ -220,15 +223,7 @@ public class UserService : GrpcUser.GrpcUserBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             response.Data = Any.Pack(new GetUserByTokenResponse
             {
@@ -408,8 +403,7 @@ public class UserService : GrpcUser.GrpcUserBase
                 return response;
             }
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -453,8 +447,7 @@ public class UserService : GrpcUser.GrpcUserBase
             var data = request.Data;
             var name = request.Name.Trim();
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -507,8 +500,7 @@ public class UserService : GrpcUser.GrpcUserBase
         {
             var email = request.Email.Trim();
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -555,8 +547,7 @@ public class UserService : GrpcUser.GrpcUserBase
             var currentPassword = request.CurrentPassword.Trim();
             var newPassword = request.NewPassword.Trim();
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -643,8 +634,7 @@ public class UserService : GrpcUser.GrpcUserBase
         {
             var password = request.Password.Trim();
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -681,8 +671,7 @@ public class UserService : GrpcUser.GrpcUserBase
         {
             var userId = request.UserId;
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -744,8 +733,7 @@ public class UserService : GrpcUser.GrpcUserBase
         {
             var userId = request.UserId;
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {
@@ -822,8 +810,7 @@ public class UserService : GrpcUser.GrpcUserBase
         {
             var enabled = request.Enabled;
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
+            var user = context.RetrieveUser();
 
             if (user is null)
             {

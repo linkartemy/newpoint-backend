@@ -6,8 +6,8 @@ namespace NewPoint.Repositories;
 
 public class ArticleCommentRepository : IArticleCommentRepository
 {
-    public readonly string TableName = "article_comment";
-    public readonly string LikeTableName = "article_comment_like";
+    public readonly string TableName = @"""article_comment""";
+    public readonly string LikeTableName = @"""article_comment_like""";
 
     public async Task<long> Insert(long articleId, long userId, string content)
     {

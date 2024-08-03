@@ -6,7 +6,7 @@ namespace NewPoint.Repositories;
 
 internal class FollowRepository : IFollowRepository
 {
-    public readonly string TableName = "follow";
+    public readonly string TableName = @"""follow""";
 
     public async Task<bool> FollowExists(long followerId, long followingId)
     {

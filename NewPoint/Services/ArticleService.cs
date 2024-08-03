@@ -71,9 +71,9 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                         article.ProfileImageId = user.ProfileImageId;
                     }
 
-                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+                    var userByToken = context.RetrieveUser();
                     article.Liked =
-                        await _articleRepository.IsLikedByUser(article.Id, (await _userRepository.GetUserByToken(token)).Id);
+                        await _articleRepository.IsLikedByUser(article.Id, userByToken.Id);
 
                     return article.ToArticleModel();
                 }).Select(article => article.Result).ToList();
@@ -125,10 +125,9 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                     article.Surname = user.Surname;
                     article.ProfileImageId = user.ProfileImageId;
 
-                    var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
                     article.Liked =
                         await _articleRepository.IsLikedByUser(article.Id,
-                            (await _userRepository.GetUserByToken(token)).Id);
+                            context.RetrieveUser().Id);
 
                     return article.ToArticleModel();
                 }).Select(article => article.Result).ToList();
@@ -169,8 +168,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                 article.ProfileImageId = user.ProfileImageId;
             }
 
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            article.Liked = await _articleRepository.IsLikedByUser(article.Id, (await _userRepository.GetUserByToken(token)).Id);
+            article.Liked = await _articleRepository.IsLikedByUser(article.Id, context.RetrieveUser().Id);
 
             response.Data = Any.Pack(new GetArticleByIdResponse { Article = article.ToArticleModel() });
 
@@ -192,14 +190,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _articleRepository.SetLikesById(request.ArticleId, await _articleRepository.GetLikesById(request.ArticleId) + 1);
             await _articleRepository.InsertArticleLike(request.ArticleId, user.Id);
@@ -227,14 +218,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
+            var user = context.RetrieveUser();
 
             await _articleRepository.SetLikesById(request.ArticleId, await _articleRepository.GetLikesById(request.ArticleId) - 1);
             await _articleRepository.DeleteArticleLike(request.ArticleId, user.Id);
@@ -262,15 +246,6 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             await _articleRepository.SetSharesById(request.ArticleId,
                 await _articleRepository.GetSharesById(request.ArticleId) + 1);
 
@@ -297,15 +272,6 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var views = await _articleRepository.GetArticleViewsById(request.ArticleId) + 1;
 
             await _articleRepository.SetArticleViewsById(request.ArticleId,
@@ -334,15 +300,6 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
-            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
-            var user = await _userRepository.GetUserByToken(token);
-            if (user == null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var comments = await _articleCommentRepository.GetCommentsByArticleId(request.ArticleId);
             foreach (var comment in comments)
             {

@@ -6,7 +6,7 @@ namespace NewPoint.Repositories;
 
 internal class ImageRepository : IImageRepository
 {
-    public readonly string TableName = "image";
+    public readonly string TableName = @"""image""";
 
     public async Task<bool> ImageExists(long id)
     {
@@ -41,6 +41,17 @@ internal class ImageRepository : IImageRepository
         return name;
     }
 
+    public async Task<long> GetImageIdByName(string name)
+    {
+        var id = await DatabaseHandler.Connection.QueryFirstAsync<long>(@$"
+        SELECT id FROM {TableName}
+        WHERE name=@name;
+        ",
+            new { name });
+
+        return id;
+    }
+
     public async Task<long> InsertImage(string name)
     {
         var id = await DatabaseHandler.Connection.ExecuteScalarAsync<long>(@$"
@@ -61,5 +72,6 @@ public interface IImageRepository
     Task<bool> ImageExists(long id);
     Task<int> Count(string name);
     Task<string> GetImageNameById(long id);
+    Task<long> GetImageIdByName(string name);
     Task<long> InsertImage(string name);
 }
