@@ -236,3 +236,4 @@ local.settings.json
 appsettings.json
 **/appsettings.*.json
 **/appsettings.json`
+*.exe
