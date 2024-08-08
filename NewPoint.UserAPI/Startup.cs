@@ -13,7 +13,7 @@ using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.Filters;
 using Vault.Client;
 
-namespace NewPoint;
+namespace NewPoint.UserAPI;
 
 public class Startup
 {

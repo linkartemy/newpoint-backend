@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using NewPoint.Common.Extensions;
 using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
+using NewPoint.UserAPI.Extensions;
 using NewPoint.UserAPI.Repositories;
 
 namespace NewPoint.UserAPI.Services;

@@ -20,6 +20,17 @@ services:
       - ./NewPoint.UserAPI:/src/NewPoint.UserAPI
     networks:
       - grpc-network
+  
+  newpoint-verificationapi:
+    build:
+      context: .
+      dockerfile: NewPoint.VerificationAPI/Dockerfile
+    ports:
+      - "5138:5138"
+    volumes:
+      - ./NewPoint.VerificationAPI:/src/NewPoint.VerificationAPI
+    networks:
+      - grpc-network
 
   nginx:
     image: nginx:latest
