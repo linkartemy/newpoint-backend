@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   newpoint:
     build:
@@ -18,6 +16,28 @@ services:
       - "5137:5137"
     volumes:
       - ./NewPoint.UserAPI:/src/NewPoint.UserAPI
+    networks:
+      - grpc-network
+  
+  newpoint-postapi:
+    build:
+      context: .
+      dockerfile: NewPoint.PostAPI/Dockerfile
+    ports:
+      - "5139:5139"
+    volumes:
+      - ./NewPoint.PostAPI:/src/NewPoint.PostAPI
+    networks:
+      - grpc-network
+  
+  newpoint-articleapi:
+    build:
+      context: .
+      dockerfile: NewPoint.ArticleAPI/Dockerfile
+    ports:
+      - "5140:5140"
+    volumes:
+      - ./NewPoint.ArticleAPI:/src/NewPoint.ArticleAPI
     networks:
       - grpc-network
   

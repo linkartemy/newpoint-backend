@@ -8,4 +8,13 @@ public static class StringExtension
             ? new NullableString { Null = new Google.Protobuf.WellKnownTypes.NullValue() }
             : new NullableString { Data = data };
     }
+
+    public static string? FromNullableString(this NullableString data)
+    {
+        if (data.KindCase == NullableString.KindOneofCase.Null)
+        {
+            return null;
+        }
+        return data.Data;
+    }
 }

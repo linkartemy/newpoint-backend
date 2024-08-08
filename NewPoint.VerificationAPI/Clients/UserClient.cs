@@ -2,16 +2,18 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Grpc.Core;
 using Grpc.Net.Client;
-using NewPoint;
 
-public class UserClient
+namespace NewPoint.VerificationAPI.Clients;
+
+public class UserClient : IUserClient
 {
     public GrpcChannel Channel { get; private set; }
     private readonly GrpcUser.GrpcUserClient Client;
+    public string Url { get; set; } = "http://localhost";
 
-    public UserClient(string url)
+    public UserClient()
     {
-        Channel = GrpcChannel.ForAddress(url);
+        Channel = GrpcChannel.ForAddress(Url);
         Client = new GrpcUser.GrpcUserClient(Channel);
     }
 
@@ -29,4 +31,9 @@ public class UserClient
         }
         return false;
     }
+}
+
+public interface IUserClient
+{
+    Task<bool> UserExistsByToken(string token);
 }

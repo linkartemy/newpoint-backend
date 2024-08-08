@@ -9,6 +9,7 @@ using NewPoint.Common.Handlers;
 using NewPoint.VerificationAPI.Repositories;
 using NewPoint.VerificationAPI.Services;
 using NewPoint.VerificationAPI.Middleware;
+using NewPoint.VerificationAPI.Clients;
 using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.Filters;
 using Vault.Client;
@@ -52,7 +53,7 @@ public class Startup
         });
 
         services.AddSingleton<ICodeRepository, CodeRepository>();
-        services.AddTransient<UserClient>();
+        services.AddTransient<IUserClient, UserClient>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>

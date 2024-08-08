@@ -9,12 +9,12 @@ namespace NewPoint.Services;
 public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
 {
     private readonly IArticleCommentRepository _articleCommentRepository;
-    private readonly ILogger<ArticleService> _logger;
+    private readonly ILogger<ArticleCommentService> _logger;
     private readonly IArticleRepository _articleRepository;
     private readonly IUserRepository _userRepository;
 
     public ArticleCommentService(IUserRepository userRepository, IArticleRepository articleRepository,
-        IArticleCommentRepository commentRepository, ILogger<ArticleService> logger)
+        IArticleCommentRepository commentRepository, ILogger<ArticleCommentService> logger)
     {
         _userRepository = userRepository;
         _articleRepository = articleRepository;

@@ -1,15 +1,14 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
-using NewPoint.VerificationAPI.Repositories;
-using NewPoint.VerificationAPI.Services;
+using NewPoint.VerificationAPI.Clients;
 
 namespace NewPoint.VerificationAPI.Middleware;
 
 public class AuthorizationInterceptor : Interceptor
 {
-    private readonly UserClient _userClient;
+    private readonly IUserClient _userClient;
 
-    public AuthorizationInterceptor(UserClient userClient)
+    public AuthorizationInterceptor(IUserClient userClient)
     {
         _userClient = userClient;
     }

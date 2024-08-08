@@ -877,4 +877,36 @@ public class UserService : GrpcUser.GrpcUserBase
             return response;
         }
     }
+
+    public override async Task<Response> GetPostUserDataById(GetPostUserDataByIdRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var user = await _userRepository.GetPostUserDataById(request.Id);
+
+            if (user is null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
+
+            response.Data = Any.Pack(new GetPostUserDataByIdResponse
+            {
+                User = user.ToUserModel()
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
 }
