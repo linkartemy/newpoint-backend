@@ -10,14 +10,6 @@
     <ItemGroup>
         <Protobuf Include="..\NewPoint.GRPC\Protos\response.proto" GrpcServices="Server" />
         <Protobuf Include="..\NewPoint.GRPC\Protos\nullable.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\user.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\feed.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\post.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\article.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\comment.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\article_comment.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\image.proto" GrpcServices="Server" />
-        <Protobuf Include="..\NewPoint.GRPC\Protos\code.proto" GrpcServices="Server" />
     </ItemGroup>
 
     <ItemGroup>
