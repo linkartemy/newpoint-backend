@@ -37,7 +37,7 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
                 .OrderByDescending(article => article.CreationTimestamp).Select(
                     async comment =>
                     {
-                        var author = await _userClient.GetPostUserDataById(comment.UserId);
+                        var author = await _userClient.GetPostUserDataById(comment.UserId, context.RetrieveToken());
                         if (author is null)
                         {
                             comment.Login = "Unknown";

@@ -17,6 +17,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.PostAPI", "NewPoin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.ArticleAPI", "NewPoint.ArticleAPI\NewPoint.ArticleAPI.csproj", "{C4316F46-A544-4646-83B3-A52FD93371E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.ObjectAPI", "NewPoint.ObjectAPI\NewPoint.ObjectAPI.csproj", "{CE0BEED8-B7DE-49C6-BA4C-CE532B4413F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.FeedAPI", "NewPoint.FeedAPI\NewPoint.FeedAPI.csproj", "{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +55,14 @@ Global
 		{C4316F46-A544-4646-83B3-A52FD93371E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4316F46-A544-4646-83B3-A52FD93371E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4316F46-A544-4646-83B3-A52FD93371E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE0BEED8-B7DE-49C6-BA4C-CE532B4413F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE0BEED8-B7DE-49C6-BA4C-CE532B4413F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE0BEED8-B7DE-49C6-BA4C-CE532B4413F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE0BEED8-B7DE-49C6-BA4C-CE532B4413F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

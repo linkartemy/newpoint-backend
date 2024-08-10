@@ -1,13 +1,4 @@
 services:
-  newpoint:
-    build:
-      context: .
-      dockerfile: NewPoint/Dockerfile
-    ports:
-      - "5136:5136"
-    networks:
-      - grpc-network
-  
   newpoint-userapi:
     build:
       context: .
@@ -41,6 +32,28 @@ services:
     networks:
       - grpc-network
   
+  newpoint-objectapi:
+    build:
+      context: .
+      dockerfile: NewPoint.ObjectAPI/Dockerfile
+    ports:
+      - "5141:5141"
+    volumes:
+      - ./NewPoint.ObjectAPI:/src/NewPoint.ObjectAPI
+    networks:
+      - grpc-network
+  
+  newpoint-feedapi:
+    build:
+      context: .
+      dockerfile: NewPoint.FeedAPI/Dockerfile
+    ports:
+      - "5142:5142"
+    volumes:
+      - ./NewPoint.FeedAPI:/src/NewPoint.FeedAPI
+    networks:
+      - grpc-network
+  
   newpoint-verificationapi:
     build:
       context: .
@@ -59,8 +72,12 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - newpoint
       - newpoint-userapi
+      - newpoint-postapi
+      - newpoint-articleapi
+      - newpoint-objectapi
+      - newpoint-feedapi
+      - newpoint-verificationapi
     networks:
       - grpc-network
 

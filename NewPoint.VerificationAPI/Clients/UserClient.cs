@@ -9,7 +9,7 @@ public class UserClient : IUserClient
 {
     public GrpcChannel Channel { get; private set; }
     private readonly GrpcUser.GrpcUserClient Client;
-    public string Url { get; set; } = "http://localhost";
+    public string Url { get; set; } = "http://newpoint-userapi:5137";
 
     public UserClient()
     {

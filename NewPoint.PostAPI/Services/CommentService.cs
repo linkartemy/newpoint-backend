@@ -36,7 +36,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 .OrderByDescending(post => post.CreationTimestamp).Select(
                     async comment =>
                     {
-                        var commentAuthor = await _userClient.GetPostUserDataById(comment.UserId);
+                        var commentAuthor = await _userClient.GetPostUserDataById(comment.UserId, context.RetrieveToken());
                         if (commentAuthor is null)
                         {
                             comment.Login = "Unknown";

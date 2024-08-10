@@ -57,7 +57,7 @@ public class PostService : GrpcPost.GrpcPostBase
             var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
                 async post =>
                 {
-                    var postAuthor = await _userClient.GetPostUserDataById(post.AuthorId);
+                    var postAuthor = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken());
                     if (postAuthor is null)
                     {
                         post.Login = "Unknown";
@@ -98,7 +98,7 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
-            var user = await _userClient.GetPostUserDataById(request.UserId);
+            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken());
             if (user is null)
             {
                 user = new User
@@ -154,7 +154,7 @@ public class PostService : GrpcPost.GrpcPostBase
         {
             var post = await _postRepository.GetPost(request.Id);
 
-            var user = await _userClient.GetPostUserDataById(post.AuthorId);
+            var user = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken());
             if (user is null)
             {
                 post.Login = "Unknown";

@@ -58,7 +58,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             var articles = (await _articleRepository.GetArticles()).OrderByDescending(article => article.CreationTimestamp).Select(
                 async article =>
                 {
-                    var user = await _userClient.GetPostUserDataById(article.AuthorId);
+                    var user = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken());
                     if (user is null)
                     {
                         article.Login = "Unknown";
@@ -99,7 +99,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
-            var user = await _userClient.GetPostUserDataById(request.UserId);
+            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken());
             if (user is null)
             {
                 user = new User
@@ -155,7 +155,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         {
             var article = await _articleRepository.GetArticle(request.Id);
 
-            var user = await _userClient.GetPostUserDataById(article.AuthorId);
+            var user = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken());
             if (user is null)
             {
                 article.Login = "Unknown";
@@ -324,6 +324,96 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         {
             response.Error = "Something went wrong. Please try again later. We are sorry";
             response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetMaxId(GetMaxIdRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            response.Data = Any.Pack(new GetMaxIdResponse
+            {
+                Id = await _articleRepository.GetMaxId()
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> IsLikedByUser(IsLikedByUserRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            response.Data = Any.Pack(new IsLikedByUserResponse
+            {
+                Liked = await _articleRepository.IsLikedByUser(request.ArticleId, request.UserId)
+            });
+
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            response.Status = 500;
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetArticlesFromId(GetArticlesFromIdRequest request, ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var articles = (await _articleRepository.GetArticlesFromId(request.Id)).OrderByDescending(article => article.CreationTimestamp).Select(
+                async article =>
+                {
+                    var user = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken());
+                    if (user is null)
+                    {
+                        article.Login = "Unknown";
+                        article.Name = "Unknown";
+                        article.Surname = "";
+                    }
+                    else
+                    {
+                        article.Login = user.Login;
+                        article.Name = user.Name;
+                        article.Surname = user.Surname;
+                        article.ProfileImageId = user.ProfileImageId;
+                    }
+
+                    var userByToken = context.RetrieveUser();
+                    article.Liked =
+                        await _articleRepository.IsLikedByUser(article.Id, userByToken.Id);
+
+                    return article.ToArticleModel();
+                }).Select(article => article.Result).ToList();
+
+            response.Data = Any.Pack(new GetArticlesFromIdResponse { Articles = { articles } });
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
             return response;
         }
     }

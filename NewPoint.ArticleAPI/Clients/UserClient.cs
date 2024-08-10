@@ -11,7 +11,7 @@ public class UserClient : IUserClient
 {
     public GrpcChannel Channel { get; private set; }
     private readonly GrpcUser.GrpcUserClient Client;
-    public string Url { get; set; } = "http://localhost";
+    public string Url { get; set; } = "http://newpoint-userapi:5137";
 
     public UserClient()
     {
@@ -26,6 +26,10 @@ public class UserClient : IUserClient
             var headers = new Metadata();
             headers.Add("Authorization", $"Bearer {token}");
             var response = await Client.GetUserByTokenAsync(new GetUserByTokenRequest(), headers);
+            if (response.Error != null && response.Error.Length > 0)
+            {
+                return false;
+            }
             return response != null;
         }
         catch (Exception e)
@@ -34,16 +38,18 @@ public class UserClient : IUserClient
         return false;
     }
 
-    public async Task<User> GetPostUserDataById(long id)
+    public async Task<User> GetPostUserDataById(long id, string token)
     {
         try
         {
-            var response = await Client.GetPostUserDataByIdAsync(new GetPostUserDataByIdRequest { Id = id });
-            if (response.Error != null)
+            var headers = new Metadata();
+            headers.Add("Authorization", $"Bearer {token}");
+            var response = await Client.GetPostUserDataByIdAsync(new GetPostUserDataByIdRequest { Id = id }, headers);
+            if (response.Error != null && response.Error.Length > 0)
             {
                 throw new RpcException(new Status(StatusCode.Internal, response.Error));
             }
-            return response.Data.Unpack<UserModel>().ToUser();
+            return response.Data.Unpack<GetPostUserDataByIdResponse>().User.ToUser();
         }
         catch (Exception e)
         {
@@ -56,17 +62,17 @@ public class UserClient : IUserClient
         var headers = new Metadata();
         headers.Add("Authorization", $"Bearer {token}");
         var response = await Client.GetUserByTokenAsync(new GetUserByTokenRequest(), headers);
-        if (response.Error != null)
+        if (response.Error != null && response.Error.Length > 0)
         {
             throw new RpcException(new Status(StatusCode.Internal, response.Error));
         }
-        return response.Data.Unpack<UserModel>().ToUser();
+        return response.Data.Unpack<GetUserByTokenResponse>().User.ToUser();
     }
 }
 
 public interface IUserClient
 {
     Task<bool> UserExistsByToken(string token);
-    Task<User> GetPostUserDataById(long id);
+    Task<User> GetPostUserDataById(long id, string token);
     Task<User> GetUserByToken(string token);
 }
