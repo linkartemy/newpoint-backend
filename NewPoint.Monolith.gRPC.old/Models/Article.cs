@@ -30,5 +30,7 @@ public class Article
 
     [JsonProperty("liked")] public bool Liked { get; set; }
 
+    [JsonProperty("bookmarked")] public bool Bookmarked { get; set; }
+
     [JsonProperty("creation_timestamp")] public DateTime CreationTimestamp { get; set; }
 }

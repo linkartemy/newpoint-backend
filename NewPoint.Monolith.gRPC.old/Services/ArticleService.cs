@@ -11,13 +11,17 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
 {
     private readonly ILogger<ArticleService> _logger;
     private readonly IArticleRepository _articleRepository;
+    private readonly IArticleShareRepository _articleShareRepository;
+    private readonly IArticleBookmarkRepository _articleBookmarkRepository;
     private readonly IUserRepository _userRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
 
-    public ArticleService(IUserRepository userRepository, IArticleRepository articleRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
+    public ArticleService(IUserRepository userRepository, IArticleRepository articleRepository, IArticleShareRepository articleShareRepository, IArticleBookmarkRepository articleBookmarkRepository, IArticleCommentRepository articleCommentRepository, ILogger<ArticleService> logger)
     {
         _userRepository = userRepository;
         _articleRepository = articleRepository;
+        _articleShareRepository = articleShareRepository;
+        _articleBookmarkRepository = articleBookmarkRepository;
         _articleCommentRepository = articleCommentRepository;
         _logger = logger;
     }
@@ -53,11 +57,19 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
             var articles = (await _articleRepository.GetArticles()).OrderByDescending(article => article.CreationTimestamp).Select(
                 async article =>
                 {
-                    var user = await _userRepository.GetPostUserDataById(article.AuthorId);
-                    if (user is null)
+                    var author = await _userRepository.GetPostUserDataById(article.AuthorId);
+                    if (author is null)
                     {
                         article.Login = "Unknown";
                         article.Name = "Unknown";
@@ -65,10 +77,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                     }
                     else
                     {
-                        article.Login = user.Login;
-                        article.Name = user.Name;
-                        article.Surname = user.Surname;
-                        article.ProfileImageId = user.ProfileImageId;
+                        article.Login = author.Login;
+                        article.Name = author.Name;
+                        article.Surname = author.Surname;
+                        article.ProfileImageId = author.ProfileImageId;
                     }
 
                     var userByToken = context.RetrieveUser();
@@ -97,6 +109,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
             var user = await _userRepository.GetPostUserDataById(request.UserId);
             if (user is null)
             {
@@ -152,9 +165,17 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         try
         {
             var article = await _articleRepository.GetArticle(request.Id);
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
 
-            var user = await _userRepository.GetPostUserDataById(article.AuthorId);
-            if (user is null)
+            var author = await _userRepository.GetPostUserDataById(article.AuthorId);
+            if (author is null)
             {
                 article.Login = "Unknown";
                 article.Name = "Unknown";
@@ -162,10 +183,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             }
             else
             {
-                article.Login = user.Login;
-                article.Name = user.Name;
-                article.Surname = user.Surname;
-                article.ProfileImageId = user.ProfileImageId;
+                article.Login = author.Login;
+                article.Name = author.Name;
+                article.Surname = author.Surname;
+                article.ProfileImageId = author.ProfileImageId;
             }
 
             article.Liked = await _articleRepository.IsLikedByUser(article.Id, context.RetrieveUser().Id);
@@ -246,6 +267,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         };
         try
         {
+            await _articleShareRepository.AddArticleShare(context.RetrieveUser().Id, request.ArticleId);
             await _articleRepository.SetSharesById(request.ArticleId,
                 await _articleRepository.GetSharesById(request.ArticleId) + 1);
 

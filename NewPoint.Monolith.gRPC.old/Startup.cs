@@ -56,11 +56,15 @@ public class Startup
         // services.AddSingleton<IPostService, PostService>();
         services.AddSingleton<IPostRepository, PostRepository>();
         services.AddSingleton<IArticleRepository, ArticleRepository>();
+        services.AddSingleton<IPostShareRepository, PostShareRepository>();
+        services.AddSingleton<IArticleShareRepository, ArticleShareRepository>();
         // services.AddSingleton<ICodeService, CodeService>();
         services.AddSingleton<ICodeRepository, CodeRepository>();
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<ICommentRepository, CommentRepository>();
         services.AddSingleton<IArticleCommentRepository, ArticleCommentRepository>();
+        services.AddSingleton<IPostBookmarkRepository, PostBookmarkRepository>();
+        services.AddSingleton<IArticleBookmarkRepository, ArticleBookmarkRepository>();
         // services.AddSingleton<ICommentService, CommentService>();
         services.AddSingleton<IImageRepository, ImageRepository>();
         services.AddSingleton<IObjectRepository, ObjectRepository>();
@@ -186,6 +190,7 @@ public class Startup
             endpoints.MapGrpcService<ArticleService>();
             endpoints.MapGrpcService<CommentService>();
             endpoints.MapGrpcService<ArticleCommentService>();
+            endpoints.MapGrpcService<BookmarkService>();
             endpoints.MapGrpcService<CodeService>();
             endpoints.MapGrpcService<ImageService>();
             endpoints.MapGrpcReflectionService();

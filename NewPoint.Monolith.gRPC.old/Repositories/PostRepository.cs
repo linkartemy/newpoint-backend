@@ -19,7 +19,7 @@ public class PostRepository : IPostRepository
             new
             {
                 authorId = authorId,
-                content = content,
+                content = content
             });
         return id;
     }
@@ -91,10 +91,10 @@ public class PostRepository : IPostRepository
         return id;
     }
 
-    public async Task<Post> GetPost(long postId)
+    public async Task<Post?> GetPost(long postId)
     {
-        var post = await DatabaseHandler.Connection.QueryFirstAsync<Post>(@$"
-        SELECT 
+        var post = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<Post?>(@"
+        SELECT
             id AS Id,
             author_id AS AuthorId,
             content AS Content,
@@ -104,8 +104,8 @@ public class PostRepository : IPostRepository
             comments AS Comments,
             views AS Views,
             creation_timestamp as CreationTimestamp
-        FROM {TableName}
-        WHERE id=@postId;
+        FROM { TableName}
+        WHERE id = @postId;
         ",
             new { postId });
         return post;
@@ -275,7 +275,7 @@ public interface IPostRepository
     Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId);
     Task<IEnumerable<Post>> GetPostsFromId(long id);
     Task<long> GetMaxId();
-    Task<Post> GetPost(long postId);
+    Task<Post?> GetPost(long postId);
     Task<bool> IsLikedByUser(long postId, long userId);
     Task<int> GetLikesById(long postId);
     Task SetLikesById(long postId, int likes);

@@ -1,5 +1,6 @@
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using NewPoint.Extensions;
 using NewPoint.Handlers;
 using NewPoint.Models;
 using NewPoint.Repositories;
@@ -31,8 +32,14 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
         };
         try
         {
-            var comments = (await _articleCommentRepository.GetCommentsByArticleId(request.ArticleId))
-                .OrderByDescending(article => article.CreationTimestamp).Select(
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var lastCommentId = request.LastCommentId;
+            if (lastCommentId == -1)
+            {
+                lastCommentId = long.MaxValue;
+            }
+            var comments = (await _articleCommentRepository.GetCommentsByArticleIdFromId(request.ArticleId, lastCommentId))
+                .OrderByDescending(comment => comment.CreationTimestamp).Select(
                     async comment =>
                     {
                         var user = await _userRepository.GetPostUserDataById(comment.UserId);
@@ -49,27 +56,54 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
                             comment.Surname = user.Surname;
                         }
 
-                        var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
                         comment.Liked =
                             await _articleCommentRepository.IsLikedByUser(comment.Id,
                                 (await _userRepository.GetUserByToken(token)).Id);
 
-                        return new ArticleCommentModel
-                        {
-                            Id = comment.Id,
-                            UserId = comment.UserId,
-                            Login = comment.Login,
-                            Name = comment.Name,
-                            Surname = comment.Surname,
-                            Content = comment.Content,
-                            Likes = comment.Likes,
-                            Liked = comment.Liked,
-                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
-                        };
-                        ;
+                        return comment.ToArticleCommentModel();
                     }).Select(comment => comment.Result).ToList();
 
             response.Data = Any.Pack(new GetCommentsByArticleIdResponse { Comments = { comments } });
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetArticleCommentById(GetArticleCommentByIdRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var comment = await _articleCommentRepository.GetCommentById(request.Id);
+            var user = await _userRepository.GetPostUserDataById(comment.UserId);
+            if (user is null)
+            {
+                comment.Login = "Unknown";
+                comment.Name = "Unknown";
+                comment.Surname = "";
+            }
+            else
+            {
+                comment.Login = user.Login;
+                comment.Name = user.Name;
+                comment.Surname = user.Surname;
+            }
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            comment.Liked =
+                await _articleCommentRepository.IsLikedByUser(comment.Id,
+                    (await _userRepository.GetUserByToken(token)).Id);
+
+            response.Data = Any.Pack(new GetArticleCommentByIdResponse { Comment = comment.ToArticleCommentModel() });
             return response;
         }
         catch (Exception)

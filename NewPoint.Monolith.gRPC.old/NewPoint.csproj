@@ -16,6 +16,7 @@
         <Protobuf Include="Protos\article.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\comment.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\article_comment.proto" GrpcServices="Server" ProtoRoot="Protos\" />
+        <Protobuf Include="Protos\bookmark.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\image.proto" GrpcServices="Server" ProtoRoot="Protos\" />
         <Protobuf Include="Protos\code.proto" GrpcServices="Server" ProtoRoot="Protos\" />
     </ItemGroup>

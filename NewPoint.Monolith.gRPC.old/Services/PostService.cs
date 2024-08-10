@@ -11,13 +11,17 @@ public class PostService : GrpcPost.GrpcPostBase
 {
     private readonly ILogger<PostService> _logger;
     private readonly IPostRepository _postRepository;
+    private readonly IPostShareRepository _postShareRepository;
+    private readonly IPostBookmarkRepository _postBookmarkRepository;
     private readonly IUserRepository _userRepository;
     private readonly ICommentRepository _commentRepository;
 
-    public PostService(IUserRepository userRepository, IPostRepository postRepository, ICommentRepository commentRepository, ILogger<PostService> logger)
+    public PostService(IUserRepository userRepository, IPostRepository postRepository, IPostShareRepository postShareRepository, IPostBookmarkRepository postBookmarkRepository, ICommentRepository commentRepository, ILogger<PostService> logger)
     {
         _userRepository = userRepository;
         _postRepository = postRepository;
+        _postShareRepository = postShareRepository;
+        _postBookmarkRepository = postBookmarkRepository;
         _commentRepository = commentRepository;
         _logger = logger;
     }
@@ -52,6 +56,14 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var user = await _userRepository.GetUserByToken(token);
+            if (user == null)
+            {
+                response.Error = "User doesn't exist. Server error. Please contact with us";
+                response.Status = 400;
+                return response;
+            }
             var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
                 async post =>
                 {
@@ -88,7 +100,7 @@ public class PostService : GrpcPost.GrpcPostBase
         }
     }
 
-    public override async Task<Response> GetPostsByUserId(GetPostsByUserIdRequest request, ServerCallContext context)
+    public override async Task<Response> GetPostsByUserId(GetPostsByUserIdRequest request, ServerCallContext context) // TODO: Modify, pass userId to repository
     {
         var response = new Response
         {
@@ -106,6 +118,8 @@ public class PostService : GrpcPost.GrpcPostBase
                     Surname = ""
                 };
             }
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var userId = (await _userRepository.GetUserByToken(token)).Id;
 
             var lastPostId = request.LastPostId;
             if (lastPostId == -1)
@@ -150,6 +164,9 @@ public class PostService : GrpcPost.GrpcPostBase
         };
         try
         {
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var userId = (await _userRepository.GetUserByToken(token)).Id;
+
             var post = await _postRepository.GetPost(request.Id);
 
             var user = await _userRepository.GetPostUserDataById(post.AuthorId);

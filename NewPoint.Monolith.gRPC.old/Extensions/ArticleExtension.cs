@@ -24,6 +24,7 @@ public static class ArticleExtension
             Comments = article.Comments,
             Views = article.Views,
             Liked = article.Liked,
+            Bookmarked = article.Bookmarked,
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(article.CreationTimestamp)
         };
     }

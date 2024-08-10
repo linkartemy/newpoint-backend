@@ -31,8 +31,14 @@ public class CommentService : GrpcComment.GrpcCommentBase
         };
         try
         {
-            var comments = (await _commentRepository.GetCommentsByPostId(request.PostId))
-                .OrderByDescending(post => post.CreationTimestamp).Select(
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            var lastCommentId = request.LastCommentId;
+            if (lastCommentId == -1)
+            {
+                lastCommentId = long.MaxValue;
+            }
+            var comments = (await _commentRepository.GetCommentsByPostIdFromId(request.PostId, lastCommentId))
+                .OrderByDescending(comment => comment.CreationTimestamp).Select(
                     async comment =>
                     {
                         var commentAuthor = await _userRepository.GetPostUserDataById(comment.UserId);
@@ -54,22 +60,49 @@ public class CommentService : GrpcComment.GrpcCommentBase
                             await _commentRepository.IsLikedByUser(comment.Id,
                                 user.Id);
 
-                        return new CommentModel
-                        {
-                            Id = comment.Id,
-                            UserId = comment.UserId,
-                            Login = comment.Login,
-                            Name = comment.Name,
-                            Surname = comment.Surname,
-                            Content = comment.Content,
-                            Likes = comment.Likes,
-                            Liked = comment.Liked,
-                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
-                        };
-                        ;
+                        return comment.ToCommentModel();
                     }).Select(comment => comment.Result).ToList();
 
             response.Data = Any.Pack(new GetCommentsByPostIdResponse { Comments = { comments } });
+            return response;
+        }
+        catch (Exception)
+        {
+            response.Status = 500;
+            response.Error = "Something went wrong. Please try again later. We are sorry";
+            return response;
+        }
+    }
+
+    public override async Task<Response> GetCommentById(GetCommentByIdRequest request,
+        ServerCallContext context)
+    {
+        var response = new Response
+        {
+            Status = 200
+        };
+        try
+        {
+            var comment = await _commentRepository.GetCommentById(request.Id);
+            var user = await _userRepository.GetPostUserDataById(comment.UserId);
+            if (user is null)
+            {
+                comment.Login = "Unknown";
+                comment.Name = "Unknown";
+                comment.Surname = "";
+            }
+            else
+            {
+                comment.Login = user.Login;
+                comment.Name = user.Name;
+                comment.Surname = user.Surname;
+            }
+
+            var token = context.RequestHeaders.Get("Authorization")!.Value.Split(' ')[1];
+            comment.Liked =
+                await _commentRepository.IsLikedByUser(comment.Id,
+                    (await _userRepository.GetUserByToken(token)).Id);
+            response.Data = Any.Pack(new GetCommentByIdResponse { Comment = comment.ToCommentModel() });
             return response;
         }
         catch (Exception)

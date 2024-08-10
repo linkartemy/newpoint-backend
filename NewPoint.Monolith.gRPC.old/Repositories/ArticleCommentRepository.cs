@@ -48,6 +48,25 @@ public class ArticleCommentRepository : IArticleCommentRepository
         return comments;
     }
 
+    public async Task<IEnumerable<ArticleComment?>> GetCommentsByArticleIdFromId(long articleId, long id)
+    {
+        var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(@"
+        SELECT 
+            id AS id,
+            user_id AS UserId,
+            article_id AS ArticleId,
+            content AS Content,
+            likes AS Likes,
+            creation_timestamp as CreationTimestamp
+        FROM ""article_comment""
+        WHERE article_id=@articleId AND id <= @id
+        ORDER BY id DESC
+        LIMIT 10;
+        ",
+            new { articleId, id });
+        return comments;
+    }
+
     public async Task<ArticleComment?> GetCommentById(long commentId)
     {
         var comment = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<ArticleComment?>(@$"
@@ -147,6 +166,7 @@ public interface IArticleCommentRepository
     Task<long> Insert(long articleId, long userId, string content);
     Task Delete(long commentId);
     Task<IEnumerable<ArticleComment?>> GetCommentsByArticleId(long articleId);
+    Task<IEnumerable<ArticleComment?>> GetCommentsByArticleIdFromId(long articleId, long id);
     Task<ArticleComment?> GetCommentById(long commentId);
     Task<bool> IsLikedByUser(long commentId, long userId);
     Task<long> GetLikesById(long commentId);

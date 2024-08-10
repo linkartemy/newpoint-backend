@@ -23,6 +23,8 @@ public static class PostExtension
             Comments = post.Comments,
             Views = post.Views,
             Liked = post.Liked,
+            Shared = post.Shared,
+            Bookmarked = post.Bookmarked,
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
         };
     }
@@ -32,5 +34,12 @@ public static class PostExtension
         return data is null
             ? new NullablePost { Null = new NullValue() }
             : new NullablePost { Data = data };
+    }
+
+    public static NullableInt64 ToNullableInt64(this long? data)
+    {
+        return data is null
+            ? new NullableInt64 { Null = new NullValue() }
+            : new NullableInt64 { Data = data.Value };
     }
 }
