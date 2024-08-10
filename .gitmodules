@@ -1,0 +1,3 @@
+[submodule "newpoint-grpc"]
+	path = NewPoint.GRPC
+	url = git@github.com:linkartemy/newpoint-grpc.git
