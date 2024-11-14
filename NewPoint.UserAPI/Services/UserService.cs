@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Google.Protobuf.WellKnownTypes;
+using Google.Rpc;
 using Grpc.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using NewPoint.Common.Extensions;
@@ -7,6 +8,7 @@ using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
 using NewPoint.UserAPI.Extensions;
 using NewPoint.UserAPI.Repositories;
+using Status = Google.Rpc.Status;
 
 namespace NewPoint.UserAPI.Services;
 
@@ -37,10 +39,7 @@ public class UserService : GrpcUser.GrpcUserBase
 
     public override async Task<Response> Login(LoginRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
+        var response = new Response();
         try
         {
             var login = request.Login.Trim();
@@ -51,9 +50,14 @@ public class UserService : GrpcUser.GrpcUserBase
 
             if (usersWithLogin is 0 && usersWithEmail is 0)
             {
-                response.Error = "Wrong login or password";
-                response.Status = 400;
-                return response;
+                throw new GrpcError("Wrong login or password", Code.InvalidArgument, new List<BadRequest.Types.FieldViolation>
+                {
+                    new()
+                    {
+                        Field = "login",
+                        Description = "Wrong login or password"
+                    }
+                }).ToRpcException();
             }
 
             User user;
@@ -69,9 +73,14 @@ public class UserService : GrpcUser.GrpcUserBase
 
             if (AuthenticationHandler.VerifyPassword(user, password) is false)
             {
-                response.Error = "Wrong login or password";
-                response.Status = 400;
-                return response;
+                throw new GrpcError("Wrong login or password", Code.InvalidArgument, new List<BadRequest.Types.FieldViolation>
+                {
+                    new()
+                    {
+                        Field = "login",
+                        Description = "Wrong login or password"
+                    }
+                }).ToRpcException();
             }
 
             var token = await _userRepository.GetTokenById(user.Id);
@@ -89,33 +98,26 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new GrpcError("Something went wrong. Please try again later. We are sorry", Code.Internal).ToRpcException();
         }
     }
 
     public override async Task<Response> Register(RegisterRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
+        var response = new Response();
         try
         {
             var login = request.Login.Trim();
 
             if (login.Length < 4)
             {
-                response.Error = "Username must be at least 4 symbols";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Username must be at least 4 symbols");
                 return response;
             }
 
             if (login.Length > 32)
             {
-                response.Error = "Username's length can't be over 32 symbols";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Username's length can't be over 32 symbols");
                 return response;
             }
 
@@ -123,15 +125,13 @@ public class UserService : GrpcUser.GrpcUserBase
 
             if (password.Length < 8)
             {
-                response.Error = "Password's length must be at least 8 symbols";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Password's length must be at least 8 symbols");
                 return response;
             }
 
             if (password.Length > 32)
             {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Password's length can't be over 32 symbols");
                 return response;
             }
 
@@ -140,22 +140,19 @@ public class UserService : GrpcUser.GrpcUserBase
 
             if (!hasNumber.IsMatch(password))
             {
-                response.Error = "Password must contain at least 1 digit";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Password must contain at least 1 digit");
                 return response;
             }
 
             if (!hasUpperChar.IsMatch(password))
             {
-                response.Error = "Password must contain at least 1 capital letter";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Password must contain at least 1 capital letter");
                 return response;
             }
 
             if (password.Length > 32)
             {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "Password's length can't be over 32 symbols");
                 return response;
             }
 
@@ -164,8 +161,7 @@ public class UserService : GrpcUser.GrpcUserBase
 
             if (email.Length == 0 && phone.Length == 0)
             {
-                response.Error = "You must provide at least email or phone number";
-                response.Status = 400;
+                context.Status = new Status(StatusCode.InvalidArgument, "You must provide at least email or phone number");
                 return response;
             }
 
