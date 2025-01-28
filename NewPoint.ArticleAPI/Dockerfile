@@ -1,17 +1,17 @@
 # Use the official ASP.NET runtime as a parent image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 5140
 
 # Use the SDK image to build the app
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy the solution file and restore dependencies
+# Copy the project files and restore dependencies
 COPY ["NewPoint.ArticleAPI/NewPoint.ArticleAPI.csproj", "NewPoint.ArticleAPI/"]
 COPY ["NewPoint.Common/NewPoint.Common.csproj", "NewPoint.Common/"]
 
-# Restore the dependencies for both projects
+# Restore the dependencies
 RUN dotnet restore "NewPoint.ArticleAPI/NewPoint.ArticleAPI.csproj"
 
 # Copy all project files
