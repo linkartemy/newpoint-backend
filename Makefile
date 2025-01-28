@@ -28,6 +28,12 @@ down:
 .PHONY: restart
 restart: down up
 
+.PHONY: restart-attach
+restart-attach: down up-attach
+
+.PHONY: full-restart-attach
+full-restart-attach: down build up-attach
+
 .PHONY: logs
 logs:
 	@echo "Viewing logs of all services..."

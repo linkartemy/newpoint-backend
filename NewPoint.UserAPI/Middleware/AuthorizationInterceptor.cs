@@ -21,7 +21,9 @@ public class AuthorizationInterceptor : Interceptor
     {
         try
         {
-            if (context.Method.Contains($"NewPoint.GrpcUser{nameof(UserService.Login)}") is true || context.Method.Contains($"NewPoint.GrpcUser{nameof(UserService.Register)}") is true)
+            if (context.Method.Contains(nameof(UserService.Login)) is true
+            || context.Method.Contains(nameof(UserService.Register)) is true
+            || context.Method.Contains(nameof(UserService.ValidateUser)) is true)
             {
                 return await continuation(request, context);
             }

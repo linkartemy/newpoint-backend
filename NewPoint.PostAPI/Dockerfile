@@ -33,5 +33,8 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Copy the appsettings.json file
+COPY configs/postapi/appsettings.postapi.json /app/appsettings.json
+
 # Entry point for the application
 ENTRYPOINT ["dotnet", "NewPoint.PostAPI.dll"]

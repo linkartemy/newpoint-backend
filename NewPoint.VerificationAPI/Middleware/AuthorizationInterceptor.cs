@@ -1,5 +1,6 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
+using NewPoint.VerificationAPI.Services;
 using NewPoint.VerificationAPI.Clients;
 
 namespace NewPoint.VerificationAPI.Middleware;
@@ -20,6 +21,15 @@ public class AuthorizationInterceptor : Interceptor
     {
         try
         {
+            if (context.Method.Contains(nameof(CodeService.AddEmailVerificationCode)) is true
+            || context.Method.Contains(nameof(CodeService.VerifyEmailVerificationCode)) is true
+            || context.Method.Contains(nameof(CodeService.AddPhoneVerificationCode)) is true
+            || context.Method.Contains(nameof(CodeService.VerifyPhoneVerificationCode)) is true
+            || context.Method.Contains(nameof(CodeService.AddPasswordChangeVerificationCode)) is true
+            || context.Method.Contains(nameof(CodeService.VerifyPasswordChangeVerificationCode)) is true)
+            {
+                return await continuation(request, context);
+            }
             if (context.RequestHeaders.Any(x => x.Key.ToLower() == "authorization") is false)
             {
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "Authorization header is missing"));

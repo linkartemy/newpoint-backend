@@ -51,19 +51,7 @@ public class Startup
                 });
         });
 
-        // services.AddSingleton<IUserService, UserService>();
         services.AddSingleton<IUserRepository, UserRepository>();
-        // services.AddSingleton<IPostService, PostService>();
-        // services.AddSingleton<IPostRepository, PostRepository>();
-        // services.AddSingleton<IArticleRepository, ArticleRepository>();
-        // services.AddSingleton<ICodeService, CodeService>();
-        // services.AddSingleton<ICodeRepository, CodeRepository>();
-        // services.AddSingleton<ICommentService, CommentService>();
-        // services.AddSingleton<ICommentRepository, CommentRepository>();
-        // services.AddSingleton<IArticleCommentRepository, ArticleCommentRepository>();
-        // services.AddSingleton<ICommentService, CommentService>();
-        // services.AddSingleton<IImageRepository, ImageRepository>();
-        // services.AddSingleton<IObjectRepository, ObjectRepository>();
         services.AddSingleton<IFollowRepository, FollowRepository>();
         services.AddEndpointsApiExplorer();
 
@@ -106,14 +94,6 @@ public class Startup
         var vaultOptions = Configuration.GetSection("Vault").Get<VaultOptions>();
         var vaultService = new VaultConfigurationProvider(vaultOptions);
         vaultService.Load();
-
-        // DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
-
-        // AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
-
-        // SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
-
-        // S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
 
         services.AddMinio(configureClient => configureClient
             .WithEndpoint(S3Handler.Configuration.Endpoint)
@@ -181,13 +161,6 @@ public class Startup
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapGrpcService<UserService>();
-            // endpoints.MapGrpcService<FeedService>();
-            // endpoints.MapGrpcService<PostService>();
-            // endpoints.MapGrpcService<ArticleService>();
-            // endpoints.MapGrpcService<CommentService>();
-            // endpoints.MapGrpcService<ArticleCommentService>();
-            // endpoints.MapGrpcService<CodeService>();
-            // endpoints.MapGrpcService<ImageService>();
             endpoints.MapGrpcReflectionService();
             endpoints.MapControllers();
         });

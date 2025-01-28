@@ -33,5 +33,8 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Copy the appsettings.json file
+COPY configs/verificationapi/appsettings.verificationapi.json /app/appsettings.json
+
 # Entry point for the application
 ENTRYPOINT ["dotnet", "NewPoint.VerificationAPI.dll"]
