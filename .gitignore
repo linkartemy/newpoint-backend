@@ -3,7 +3,6 @@
 .idea
 bin
 obj
-Poolit/appsettings.json
 
 # User-specific files
 *.suo

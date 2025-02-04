@@ -97,14 +97,6 @@ public class Startup
         var vaultService = new VaultConfigurationProvider(vaultOptions);
         vaultService.Load();
 
-        // DatabaseHandler.ConnectionString = Configuration.GetConnectionString("Postgres");
-
-        // AuthenticationHandler.JwtToken = Configuration.GetSection(nameof(JwtConfiguration)).GetValue<string>("token");
-
-        // SmtpHandler.Configuration = new SmtpConfiguration(Configuration.GetSection(nameof(SmtpConfiguration)));
-
-        // S3Handler.Configuration = new S3Configuration(Configuration.GetSection(nameof(S3Configuration)));
-
         services.AddMinio(configureClient => configureClient
             .WithEndpoint(S3Handler.Configuration.Endpoint)
             .WithSSL(false)
