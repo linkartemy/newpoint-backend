@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "response.proto";
+import "google/protobuf/timestamp.proto";
+import "nullable.proto";
+
+option csharp_namespace = "NewPointStorage";
+
+package image;
+
+service GrpcImage {
+  rpc GetImageById (GetImageByIdRequest) returns (response.Response);
+  rpc AddImage (AddImageRequest) returns (response.Response);
+}
+
+message ImageModel {
+  int64 id = 1;
+  string hash = 2;
+  bytes data = 3;
+}
+
+message GetImageByIdRequest {
+  int64 id = 1;
+}
+
+message GetImageByIdResponse {
+  ImageModel image = 1;
+}
+
+message AddImageRequest {
+  bytes data = 1;
+}
+
+message AddImageResponse {
+  int64 id = 1;
+  string hash = 2;
+}
