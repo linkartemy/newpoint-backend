@@ -32,5 +32,7 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+COPY configs/database-migrations/appsettings.database-migrations.json /app/appsettings.json
+
 # Define the entry point for the container
 ENTRYPOINT ["dotnet", "DatabaseMigrations.dll"]

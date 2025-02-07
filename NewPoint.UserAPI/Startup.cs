@@ -12,6 +12,8 @@ using NewPoint.UserAPI.Middleware;
 using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.Filters;
 using Vault.Client;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Server.IISIntegration;
 
 namespace NewPoint.UserAPI;
 
@@ -77,8 +79,6 @@ public class Startup
         services.AddControllers().AddNewtonsoftJson(options =>
             options.SerializerSettings.Converters.Add(new StringEnumConverter()));
         services.AddControllers().AddNewtonsoftJson();
-
-        services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = long.MaxValue; });
 
         services.Configure<FormOptions>(x =>
         {

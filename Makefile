@@ -1,6 +1,7 @@
 COMPOSE_FILE = docker-compose.yaml
 DC = docker compose -f $(COMPOSE_FILE)
-SERVICES := $(shell awk '/^[ ]{2}[a-zA-Z0-9_-]+:$/ {print $$1}' $(COMPOSE_FILE))
+SERVICES := $(shell grep -E '^\s{2}[a-zA-Z0-9_-]+:' $(COMPOSE_FILE) | awk '{print $$1}' | tr -d ':')
+DATABASE_MIGRATIONS_SERVICE := database-migrations
 
 .PHONY: all
 all: build up
@@ -23,7 +24,7 @@ up-attach:
 .PHONY: down
 down:
 	@echo "Stopping and deleting all services..."
-	$(DC) down --remove-orphans
+	$(DC) down
 
 .PHONY: restart
 restart: down up
@@ -38,12 +39,6 @@ full-restart-attach: down build up-attach
 logs:
 	@echo "Viewing logs of all services..."
 	$(DC) logs -f
-
-.PHONY: clean
-clean:
-	@echo "Cleaning docker containers, images, networks and volumes..."
-	$(DC) down --rmi all --volumes --remove-orphans
-	docker system prune -f
 
 .PHONY: build-%
 build-%:
@@ -78,3 +73,15 @@ services:
 	@echo "Available services:"
 	@echo $(SERVICES) | tr ' ' '\n'
 
+.PHONY: build-migrations
+build-migrations:
+	@echo "Building migrations service..."
+	docker build -t database-migrations -f DatabaseMigrations/Dockerfile .
+
+.PHONY: migrate
+migrate: build-migrations
+	docker run --rm --name database-migrations-container database-migrations
+
+.PHONY: clean
+clean-migrations:
+	docker rmi database-migrations || true

@@ -79,8 +79,6 @@ public class Startup
             options.SerializerSettings.Converters.Add(new StringEnumConverter()));
         services.AddControllers().AddNewtonsoftJson();
 
-        services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = long.MaxValue; });
-
         services.Configure<FormOptions>(x =>
         {
             x.ValueLengthLimit = int.MaxValue;

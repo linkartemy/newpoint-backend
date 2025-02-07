@@ -12,7 +12,7 @@ class Program
     static void Main(string[] args)
     {
         _configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetParent(Environment.ProcessPath).Parent.Parent.Parent.FullName)
+            .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", false, true)
             .Build();
 

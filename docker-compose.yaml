@@ -9,7 +9,7 @@ services:
       - ./NewPoint.UserAPI:/src/NewPoint.UserAPI
     networks:
       - grpc-network
-  
+
   newpoint-postapi:
     build:
       context: .
@@ -20,7 +20,7 @@ services:
       - ./NewPoint.PostAPI:/src/NewPoint.PostAPI
     networks:
       - grpc-network
-  
+
   newpoint-articleapi:
     build:
       context: .
@@ -31,7 +31,7 @@ services:
       - ./NewPoint.ArticleAPI:/src/NewPoint.ArticleAPI
     networks:
       - grpc-network
-  
+
   newpoint-objectapi:
     build:
       context: .
@@ -42,7 +42,7 @@ services:
       - ./NewPoint.ObjectAPI:/src/NewPoint.ObjectAPI
     networks:
       - grpc-network
-  
+
   newpoint-feedapi:
     build:
       context: .
@@ -53,7 +53,7 @@ services:
       - ./NewPoint.FeedAPI:/src/NewPoint.FeedAPI
     networks:
       - grpc-network
-  
+
   newpoint-verificationapi:
     build:
       context: .

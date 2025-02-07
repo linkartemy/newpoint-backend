@@ -40,6 +40,7 @@ public class Program
                     .ConfigureKestrel(options =>
                     {
                         options.Limits.MinRequestBodyDataRate = null;
+                        options.Limits.MaxRequestBodySize = long.MaxValue;
 
                         options.ListenAnyIP(5137,
                             listenOptions => { listenOptions.Protocols = HttpProtocols.Http2; });
