@@ -56,6 +56,7 @@ public class ImageService : GrpcImage.GrpcImageBase
             _logger.LogError(e, "Error while getting image by id");
             response.Status = 500;
             response.Error = "Something went wrong. Please try again later. We are sorry";
+            throw new RpcException(new Status(StatusCode.Internal, response.Error));
             return response;
         }
     }
