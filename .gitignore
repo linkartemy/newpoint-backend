@@ -236,3 +236,5 @@ appsettings.json
 **/appsettings.*.json
 **/appsettings.json`
 *.exe
+
+NewPoint.GRPC
