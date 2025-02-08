@@ -13,12 +13,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Dapper" Version="2.0.143" />
-        <PackageReference Include="Grpc.AspNetCore" Version="2.40.0" />
-        <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.55.0" />
-        <PackageReference Include="Grpc.Net.Client" Version="2.40.0" />
-        <PackageReference Include="Grpc.Tools" Version="2.40.0" />
-        <PackageReference Include="Google.Protobuf" Version="3.27.3" />
+        <PackageReference Include="Dapper" Version="2.1.66" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+        <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.67.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.67.0" />
+        <PackageReference Include="Google.Protobuf" Version="3.29.3" />
         <PackageReference Include="HashiCorp.Vault" Version="0.3.0" />
         <PackageReference Include="MailKit" Version="4.1.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
@@ -30,8 +30,10 @@
         <PackageReference Include="Minio" Version="6.0.1" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Npgsql" Version="8.0.0-preview.4" />
+        <PackageReference Include="StackExchange.Redis" Version="2.8.24" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
         <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.8" />
+        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="7.2.0" />
         <PackageReference Include="Swashbukle.AspNetCore.Newtonsoft" Version="2.0.0" />
         <PackageReference Include="VaultSharp" Version="1.13.0.1" />
         <ProjectReference Include="../NewPoint.Common/NewPoint.Common.csproj" />

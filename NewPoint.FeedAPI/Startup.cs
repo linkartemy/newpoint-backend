@@ -95,37 +95,6 @@ public class Startup
         var vaultService = new VaultConfigurationProvider(vaultOptions);
         vaultService.Load();
 
-        services.AddMinio(configureClient => configureClient
-            .WithEndpoint(S3Handler.Configuration.Endpoint)
-            .WithSSL(false)
-            .WithCredentials(S3Handler.Configuration.AccessKey, S3Handler.Configuration.SecretKey));
-
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                        AuthenticationHandler.JwtToken)),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromMinutes(30)
-                };
-                options.Events = new JwtBearerEvents
-                {
-                    OnAuthenticationFailed = context =>
-                    {
-                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                            context.Response.Headers.Add("is-token-expired", "true");
-                        return Task.CompletedTask;
-                    }
-                };
-            });
-
         services.AddSwaggerGenNewtonsoftSupport();
         services.AddGrpcReflection();
     }

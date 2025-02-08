@@ -1,0 +1,124 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./configs/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - grpc_network
+
+  newpoint-user-service:
+    build:
+      context: .
+      dockerfile: NewPoint.UserAPI/Dockerfile
+    ports:
+      - "5137:5137"
+    volumes:
+      - newpoint-user-service-volume:/src/NewPoint.UserAPI
+    networks:
+      - grpc-network
+
+  newpoint-post-service:
+    build:
+      context: .
+      dockerfile: NewPoint.PostAPI/Dockerfile
+    ports:
+      - "5139:5139"
+    volumes:
+      - newpoint-post-service-volume:/src/NewPoint.PostAPI
+    networks:
+      - grpc-network
+
+  newpoint-article-service:
+    build:
+      context: .
+      dockerfile: NewPoint.ArticleAPI/Dockerfile
+    ports:
+      - "5140:5140"
+    volumes:
+      - newpoint-article-service-volume:/src/NewPoint.ArticleAPI
+    networks:
+      - grpc-network
+
+  newpoint-object-service:
+    build:
+      context: .
+      dockerfile: NewPoint.ObjectAPI/Dockerfile
+    ports:
+      - "5141:5141"
+    volumes:
+      - newpoint-object-service-volume:/src/NewPoint.ObjectAPI
+    networks:
+      - grpc-network
+
+  newpoint-feed-service:
+    build:
+      context: .
+      dockerfile: NewPoint.FeedAPI/Dockerfile
+    ports:
+      - "5142:5142"
+    volumes:
+      - newpoint-feed-service-volume:/src/NewPoint.FeedAPI
+    networks:
+      - grpc-network
+
+  newpoint-verification-service:
+    build:
+      context: .
+      dockerfile: NewPoint.VerificationAPI/Dockerfile
+    ports:
+      - "5138:5138"
+    volumes:
+      - newpoint-verification-service-volume:/src/NewPoint.VerificationAPI
+    networks:
+      - grpc-network
+
+  newpoint-error-localization-service:
+    build: .
+    container_name: error_localization_service_container
+    restart: always
+    depends_on:
+      - redis
+    environment:
+      - REDIS_CONNECTION=redis:6379
+    ports:
+      - "5143:5143"
+    networks:
+      - grpc-network
+    volumes:
+      - newpoint-error-localization-service-volume:/src/NewPoint.ErrorLocalizationAPI
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - redis
+      - newpoint-user-service
+      - newpoint-post-service
+      - newpoint-article-service
+      - newpoint-object-service
+      - newpoint-feed-service
+      - newpoint-verification-service
+      - newpoint-error-localization-service
+    networks:
+      - grpc-network
+
+networks:
+  grpc-network:
+    driver: bridge
+
+volumes:
+  newpoint-error-localization-service-volume:
+  newpoint-user-service-volume:
+  newpoint-post-service-volume:
+  newpoint-article-service-volume:
+  newpoint-object-service-volume:
+  newpoint-feed-service-volume:
+  newpoint-verification-service-volume:

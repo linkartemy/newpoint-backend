@@ -12,21 +12,41 @@ namespace NewPoint.UserAPI.Services;
 
 public class UserService : GrpcUser.GrpcUserBase
 {
+    public static class UserServiceErrorMessages
+    {
+        public const string GenericError = "Something went wrong. Please try again later. We are sorry";
+        public const string WrongLoginOrPassword = "Wrong login or password";
+        public const string UsernameMustBeAtLeastFourSymbols = "Username must be at least 4 symbols";
+        public const string UsernameLengthCantBeOverThirtyTwoSymbols = "Username's length can't be over 32 symbols";
+        public const string PasswordLengthMustBeAtLeastEightSymbols = "Password's length must be at least 8 symbols";
+        public const string PasswordLengthCantBeOverThirtyTwoSymbols = "Password's length can't be over 32 symbols";
+        public const string PasswordMustContainAtLeastOneDigit = "Password must contain at least 1 digit";
+        public const string PasswordMustContainAtLeastOneCapitalLetter = "Password must contain at least 1 capital letter";
+        public const string EmailOrPhoneMustBeProvided = "You must provide at least email or phone number";
+        public const string UserWithThisNameAlreadyExists = "User with this name already exists";
+        public const string UserWithThisEmailAlreadyExists = "User with this email already exists";
+        public const string UserDoesntExist = "User doesn't exist. Server error. Please contact with us";
+    }
+
+    public static class UserServiceErrorCodes
+    {
+        public const string GenericError = "generic_error";
+        public const string WrongLoginOrPassword = "wrong_login_or_password";
+        public const string UsernameMustBeAtLeastFourSymbols = "username_must_be_at_least_four_symbols";
+        public const string UsernameLengthCantBeOverThirtyTwoSymbols = "username_length_cant_be_over_thirty_two_symbols";
+        public const string PasswordLengthMustBeAtLeastEightSymbols = "password_length_must_be_at_least_eight_symbols";
+        public const string PasswordLengthCantBeOverThirtyTwoSymbols = "password_length_cant_be_over_thirty_two_symbols";
+        public const string PasswordMustContainAtLeastOneDigit = "password_must_contain_at_least_one_digit";
+        public const string PasswordMustContainAtLeastOneCapitalLetter = "password_must_contain_at_least_one_capital_letter";
+        public const string EmailOrPhoneMustBeProvided = "email_or_phone_must_be_provided";
+        public const string UserWithThisNameAlreadyExists = "user_with_this_name_already_exists";
+        public const string UserWithThisEmailAlreadyExists = "user_with_this_email_already_exists";
+        public const string UserDoesntExist = "user_doesnt_exist";
+    }
+
     private readonly ILogger<UserService> _logger;
     private readonly IUserRepository _userRepository;
-    // private readonly IImageRepository _imageRepository;
-    // private readonly IObjectRepository _objectRepository;
     private readonly IFollowRepository _followRepository;
-
-    // public UserService(IUserRepository userRepository, IImageRepository imageRepository,
-    //     IObjectRepository objectRepository, IFollowRepository followRepository, ILogger<UserService> logger)
-    // {
-    //     _userRepository = userRepository;
-    //     _imageRepository = imageRepository;
-    //     _objectRepository = objectRepository;
-    //     _followRepository = followRepository;
-    //     _logger = logger;
-    // }
 
     public UserService(IUserRepository userRepository, IFollowRepository followRepository, ILogger<UserService> logger)
     {
@@ -35,412 +55,315 @@ public class UserService : GrpcUser.GrpcUserBase
         _logger = logger;
     }
 
-    public override async Task<Response> Login(LoginRequest request, ServerCallContext context)
+    public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
     {
-        var response = new Response
+        var login = request.Login.Trim();
+        var password = request.Password.Trim();
+
+        var usersWithLogin = await _userRepository.CountByLogin(login);
+        var usersWithEmail = await _userRepository.CountByEmail(login);
+
+        if (usersWithLogin is 0 && usersWithEmail is 0)
         {
-            Status = 200
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword),
+            message: UserServiceErrorMessages.WrongLoginOrPassword);
+        }
+
+        User user;
+        if (usersWithLogin is not 0)
+        {
+            user = await _userRepository.GetUserByLogin(login);
+        }
+        else
+        {
+            user = await _userRepository.GetUserByEmail(login);
+        }
+        user.HashedPassword = await _userRepository.GetUserHashedPassword(user.Login);
+
+        if (AuthenticationHandler.VerifyPassword(user, password) is false)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword),
+            message: UserServiceErrorMessages.WrongLoginOrPassword);
+        }
+
+        var token = await _userRepository.GetTokenById(user.Id);
+
+        if (AuthenticationHandler.IsTokenExpired(token))
+        {
+            token = AuthenticationHandler.CreateToken(user);
+            await _userRepository.UpdateToken(user.Id, token);
+        }
+
+        context.GetHttpContext().Response.Headers.Add("Authorization", token);
+
+        return new LoginResponse
+        {
+            User = user.ToUserModel()
         };
-        try
-        {
-            var login = request.Login.Trim();
-            var password = request.Password.Trim();
-
-            var usersWithLogin = await _userRepository.CountByLogin(login);
-            var usersWithEmail = await _userRepository.CountByEmail(login);
-
-            if (usersWithLogin is 0 && usersWithEmail is 0)
-            {
-                response.Error = "Wrong login or password";
-                response.Status = 400;
-                return response;
-            }
-
-            User user;
-            if (usersWithLogin is not 0)
-            {
-                user = await _userRepository.GetUserByLogin(login);
-            }
-            else
-            {
-                user = await _userRepository.GetUserByEmail(login);
-            }
-            user.HashedPassword = await _userRepository.GetUserHashedPassword(user.Login);
-
-            if (AuthenticationHandler.VerifyPassword(user, password) is false)
-            {
-                response.Error = "Wrong login or password";
-                response.Status = 400;
-                return response;
-            }
-
-            var token = await _userRepository.GetTokenById(user.Id);
-
-            if (AuthenticationHandler.IsTokenExpired(token))
-            {
-                token = AuthenticationHandler.CreateToken(user);
-                await _userRepository.UpdateToken(user.Id, token);
-            }
-
-            context.GetHttpContext().Response.Headers.Add("Authorization", token);
-
-            response.Data = Any.Pack(user.ToUserModel());
-            return response;
-        }
-        catch (Exception)
-        {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
-        }
     }
 
-    public override async Task<Response> Register(RegisterRequest request, ServerCallContext context)
+    public override async Task<RegisterResponse> Register(RegisterRequest request, ServerCallContext context)
     {
-        var response = new Response
+        var login = request.Login.Trim();
+
+        if (login.Length < 4)
         {
-            Status = 200
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameMustBeAtLeastFourSymbols),
+            message: UserServiceErrorMessages.UsernameMustBeAtLeastFourSymbols);
+        }
+
+        if (login.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var password = request.Password.Trim();
+
+        if (password.Length < 8)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols),
+            message: UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
+        }
+
+        if (password.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var hasNumber = new Regex(@"[0-9]+");
+        var hasUpperChar = new Regex(@"[A-Z]+");
+
+        if (!hasNumber.IsMatch(password))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit),
+            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
+        }
+
+        if (!hasUpperChar.IsMatch(password))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter),
+            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
+        }
+
+        if (password.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var email = request.Email.Trim();
+        var phone = request.Phone.Trim();
+
+        if (email.Length == 0 && phone.Length == 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.EmailOrPhoneMustBeProvided),
+            message: UserServiceErrorMessages.EmailOrPhoneMustBeProvided);
+        }
+
+        if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false) date = DateTime.Today;
+
+        // var profileImageId = await _imageRepository.GetImageIdByName("0.png");
+
+        var user = new User
+        {
+            Login = login,
+            Name = request.Name,
+            Surname = request.Surname,
+            Email = email,
+            Phone = phone,
+            BirthDate = date,
+            ProfileImageId = 0,
+            IP = context.Peer,
+            LastLoginTimestamp = DateTime.Now
         };
-        try
+
+        if (await _userRepository.CountByLogin(login) != 0)
         {
-            var login = request.Login.Trim();
-
-            if (login.Length < 4)
-            {
-                response.Error = "Username must be at least 4 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            if (login.Length > 32)
-            {
-                response.Error = "Username's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var password = request.Password.Trim();
-
-            if (password.Length < 8)
-            {
-                response.Error = "Password's length must be at least 8 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            if (password.Length > 32)
-            {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var hasNumber = new Regex(@"[0-9]+");
-            var hasUpperChar = new Regex(@"[A-Z]+");
-
-            if (!hasNumber.IsMatch(password))
-            {
-                response.Error = "Password must contain at least 1 digit";
-                response.Status = 400;
-                return response;
-            }
-
-            if (!hasUpperChar.IsMatch(password))
-            {
-                response.Error = "Password must contain at least 1 capital letter";
-                response.Status = 400;
-                return response;
-            }
-
-            if (password.Length > 32)
-            {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var email = request.Email.Trim();
-            var phone = request.Phone.Trim();
-
-            if (email.Length == 0 && phone.Length == 0)
-            {
-                response.Error = "You must provide at least email or phone number";
-                response.Status = 400;
-                return response;
-            }
-
-            if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false) date = DateTime.Today;
-
-            // var profileImageId = await _imageRepository.GetImageIdByName("0.png");
-
-            var user = new User
-            {
-                Login = login,
-                Name = request.Name,
-                Surname = request.Surname,
-                Email = email,
-                Phone = phone,
-                BirthDate = date,
-                ProfileImageId = 0,
-                IP = context.Peer,
-                LastLoginTimestamp = DateTime.Now
-            };
-
-            if (await _userRepository.CountByLogin(login) != 0)
-            {
-                response.Error = "User with this name already exists";
-                response.Status = 400;
-                return response;
-            }
-
-            if (await _userRepository.CountByEmail(email) != 0)
-            {
-                response.Error = "User with this email already exists";
-                response.Status = 400;
-                return response;
-            }
-
-            AuthenticationHandler.AssignPasswordHash(user, password);
-
-            var token = AuthenticationHandler.CreateToken(user);
-
-            await _userRepository.InsertUser(user, token);
-
-            context.GetHttpContext().Response.Headers.Add("Authorization", token);
-
-            response.Data = Any.Pack(new RegisterResponse
-            {
-                User = user.ToUserModel()
-            });
-
-            return response;
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisNameAlreadyExists),
+            message: UserServiceErrorMessages.UserWithThisNameAlreadyExists);
         }
-        catch (Exception)
+
+        if (await _userRepository.CountByEmail(email) != 0)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists),
+            message: UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
         }
+
+        AuthenticationHandler.AssignPasswordHash(user, password);
+
+        var token = AuthenticationHandler.CreateToken(user);
+
+        await _userRepository.InsertUser(user, token);
+
+        context.GetHttpContext().Response.Headers.Add("Authorization", token);
+
+        return new RegisterResponse
+        {
+            User = user.ToUserModel()
+        };
     }
 
-    public override async Task<Response> GetUserByToken(GetUserByTokenRequest request, ServerCallContext context)
+    public override async Task<GetUserByTokenResponse> GetUserByToken(GetUserByTokenRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
-
-            response.Data = Any.Pack(new GetUserByTokenResponse
+            return new GetUserByTokenResponse
             {
                 User = user.ToUserModel()
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetProfileById(GetProfileByIdRequest request, ServerCallContext context)
+    public override async Task<GetProfileByIdResponse> GetProfileById(GetProfileByIdRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = await _userRepository.GetProfileById(request.Id);
 
             if (user is null)
             {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
+                throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
+                message: UserServiceErrorMessages.UserDoesntExist);
             }
 
-            response.Data = Any.Pack(new GetProfileByIdResponse
+            return new GetProfileByIdResponse
             {
                 User = user.ToUserModel()
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> ValidateUser(ValidateUserRequest request, ServerCallContext context)
+    public override async Task<ValidateUserResponse> ValidateUser(ValidateUserRequest request, ServerCallContext context)
     {
-        var response = new Response
+        var login = request.Login.Trim().ToLower();
+
+        if (login.Length < 4)
         {
-            Status = 200
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameMustBeAtLeastFourSymbols),
+            message: UserServiceErrorMessages.UsernameMustBeAtLeastFourSymbols);
+        }
+
+        if (login.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var password = request.Password.Trim();
+
+        if (password.Length < 8)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols),
+            message: UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
+        }
+
+        if (password.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var hasNumber = new Regex(@"[0-9]+");
+        var hasUpperChar = new Regex(@"[A-Z]+");
+
+        if (!hasNumber.IsMatch(password))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit),
+            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
+        }
+
+        if (!hasUpperChar.IsMatch(password))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter),
+            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
+        }
+
+        if (password.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var email = request.Email.Trim();
+        var phone = request.Phone.Trim();
+
+        if (email.Length == 0 && phone.Length == 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.EmailOrPhoneMustBeProvided),
+            message: UserServiceErrorMessages.EmailOrPhoneMustBeProvided);
+        }
+
+        if (await _userRepository.CountByLogin(login) != 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisNameAlreadyExists),
+            message: UserServiceErrorMessages.UserWithThisNameAlreadyExists);
+        }
+
+        if (await _userRepository.CountByEmail(email) != 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists),
+            message: UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
+        }
+
+        return new ValidateUserResponse
+        {
+            Valid = true
         };
-        try
-        {
-            var login = request.Login.Trim().ToLower();
-
-            if (login.Length < 4)
-            {
-                response.Error = "Username must be at least 4 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            if (login.Length > 32)
-            {
-                response.Error = "Username's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var password = request.Password.Trim();
-
-            if (password.Length < 8)
-            {
-                response.Error = "Password's length must be at least 8 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            if (password.Length > 32)
-            {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var hasNumber = new Regex(@"[0-9]+");
-            var hasUpperChar = new Regex(@"[A-Z]+");
-
-            if (!hasNumber.IsMatch(password))
-            {
-                response.Error = "Password must contain at least 1 digit";
-                response.Status = 400;
-                return response;
-            }
-
-            if (!hasUpperChar.IsMatch(password))
-            {
-                response.Error = "Password must contain at least 1 capital letter";
-                response.Status = 400;
-                return response;
-            }
-
-            if (password.Length > 32)
-            {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var email = request.Email.Trim();
-            var phone = request.Phone.Trim();
-
-            if (email.Length == 0 && phone.Length == 0)
-            {
-                response.Error = "You must provide either email or phone number";
-                response.Status = 400;
-                return response;
-            }
-
-            if (await _userRepository.CountByLogin(login) != 0)
-            {
-                response.Error = "User with this name already exists";
-                response.Status = 400;
-                return response;
-            }
-
-            if (await _userRepository.CountByEmail(email) != 0)
-            {
-                response.Error = "User with this email already exists";
-                response.Status = 400;
-                return response;
-            }
-
-            response.Data = Any.Pack(new ValidateUserResponse
-            {
-                Valid = true
-            });
-
-            return response;
-        }
-        catch (Exception)
-        {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
-        }
     }
 
-    public override async Task<Response> UpdateProfile(UpdateProfileRequest request, ServerCallContext context)
+    public override async Task<UpdateProfileResponse> UpdateProfile(UpdateProfileRequest request, ServerCallContext context)
     {
-        var response = new Response
+        var name = request.Name.Trim();
+        var surname = request.Surname.Trim();
+        var description = request.Description.Trim();
+        var location = request.Location.Trim();
+        var birthDate = request.BirthDate;
+
+        if (description.Length > 255)
         {
-            Status = 200
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        if (birthDate == null)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var user = context.RetrieveUser();
+
+        if (user is null)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
+            message: UserServiceErrorMessages.UserDoesntExist);
+        }
+
+        user.Name = name;
+        user.Surname = surname;
+        user.Description = description.Length != 0 ? description : null;
+        user.Location = location.Length != 0 ? location : null;
+        user.BirthDate = birthDate.ToDateTime();
+
+        await _userRepository.UpdateProfile(user.Id, user);
+
+        return new UpdateProfileResponse
+        {
+            User = user.ToUserModel()
         };
-        try
-        {
-            var name = request.Name.Trim();
-            var surname = request.Surname.Trim();
-            var description = request.Description.Trim();
-            var location = request.Location.Trim();
-            var birthDate = request.BirthDate;
-
-            if (description.Length > 255)
-            {
-                response.Error = "Description's length can't be over 255 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            if (birthDate == null)
-            {
-                response.Error = "Birth date can't be null";
-                response.Status = 400;
-                return response;
-            }
-
-            var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
-            user.Name = name;
-            user.Surname = surname;
-            user.Description = description.Length != 0 ? description : null;
-            user.Location = location.Length != 0 ? location : null;
-            user.BirthDate = birthDate.ToDateTime();
-
-            await _userRepository.UpdateProfile(user.Id, user);
-
-            response.Data = Any.Pack(new UpdateProfileResponse
-            {
-                User = user.ToUserModel()
-            });
-
-            return response;
-        }
-        catch (Exception)
-        {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
-        }
     }
 
     // public override async Task<Response> UpdateProfileImage(UpdateProfileImageRequest request,
@@ -497,204 +420,139 @@ public class UserService : GrpcUser.GrpcUserBase
     //     }
     // }
 
-    public override async Task<Response> ChangeEmail(ChangeEmailRequest request,
+    public override async Task<ChangeEmailResponse> ChangeEmail(ChangeEmailRequest request,
         ServerCallContext context)
     {
-        var response = new Response
+        var email = request.Email.Trim();
+        var user = context.RetrieveUser();
+
+        if (user is null)
         {
-            Status = 200
-        };
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
+            message: UserServiceErrorMessages.UserDoesntExist);
+        }
+        if (await _userRepository.CountByEmail(email) != 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists),
+            message: UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
+        }
+
         try
         {
-            var email = request.Email.Trim();
-
-            var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
-            if (await _userRepository.CountByEmail(email) != 0)
-            {
-                response.Error = "User with this email already exists";
-                response.Status = 400;
-                return response;
-            }
-
             await _userRepository.UpdateEmailById(user.Id, email);
-
             await SmtpHandler.SendEmail(user.Email, "NewPoint: Email has been changed", "Your email has been changed successfully. If you didn't do this, please contact with us.");
-
-            response.Data = Any.Pack(new ChangeEmailResponse
+            return new ChangeEmailResponse
             {
                 Changed = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> ChangePassword(ChangePasswordRequest request,
+    public override async Task<ChangePasswordResponse> ChangePassword(ChangePasswordRequest request,
         ServerCallContext context)
     {
-        var response = new Response
+
+        var currentPassword = request.CurrentPassword.Trim();
+        var newPassword = request.NewPassword.Trim();
+
+        var user = context.RetrieveUser();
+
+        if (newPassword.Length < 8)
         {
-            Status = 200
-        };
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols),
+            message: UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
+        }
+
+        if (newPassword.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        var hasNumber = new Regex(@"[0-9]+");
+        var hasUpperChar = new Regex(@"[A-Z]+");
+
+        if (!hasNumber.IsMatch(newPassword))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit),
+            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
+        }
+
+        if (!hasUpperChar.IsMatch(newPassword))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter),
+            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
+        }
+
+        if (newPassword.Length > 32)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
+            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+        }
+
+        user.HashedPassword = await _userRepository.GetUserHashedPasswordById(user.Id);
+
+        if (AuthenticationHandler.VerifyPassword(user, currentPassword) is false)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword),
+            message: UserServiceErrorMessages.WrongLoginOrPassword);
+        }
         try
         {
-            var currentPassword = request.CurrentPassword.Trim();
-            var newPassword = request.NewPassword.Trim();
-
-            var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
-            if (newPassword.Length < 8)
-            {
-                response.Error = "Password's length must be at least 8 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            if (newPassword.Length > 32)
-            {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            var hasNumber = new Regex(@"[0-9]+");
-            var hasUpperChar = new Regex(@"[A-Z]+");
-
-            if (!hasNumber.IsMatch(newPassword))
-            {
-                response.Error = "Password must contain at least 1 digit";
-                response.Status = 400;
-                return response;
-            }
-
-            if (!hasUpperChar.IsMatch(newPassword))
-            {
-                response.Error = "Password must contain at least 1 capital letter";
-                response.Status = 400;
-                return response;
-            }
-
-            if (newPassword.Length > 32)
-            {
-                response.Error = "Password's length can't be over 32 symbols";
-                response.Status = 400;
-                return response;
-            }
-
-            user.HashedPassword = await _userRepository.GetUserHashedPasswordById(user.Id);
-
-            if (AuthenticationHandler.VerifyPassword(user, currentPassword) is false)
-            {
-                response.Error = "Wrong current password";
-                response.Status = 400;
-                return response;
-            }
-
             AuthenticationHandler.AssignPasswordHash(user, newPassword);
             await _userRepository.UpdatePasswordById(user.Id, user.HashedPassword);
 
             await SmtpHandler.SendEmail(user.Email, "NewPoint: Password has been changed", "Your password has been changed successfully. If you didn't do this, please contact with us.");
 
-            response.Data = Any.Pack(new ChangePasswordResponse
+            return new ChangePasswordResponse
             {
                 Changed = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> VerifyPassword(VerifyPasswordRequest request,
+    public override async Task<VerifyPasswordResponse> VerifyPassword(VerifyPasswordRequest request,
         ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var password = request.Password.Trim();
-
             var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             user.HashedPassword = await _userRepository.GetUserHashedPasswordById(user.Id);
-
-            response.Data = Any.Pack(new VerifyPasswordResponse
+            return new VerifyPasswordResponse
             {
                 Verified = AuthenticationHandler.VerifyPassword(user, password)
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> Follow(FollowRequest request,
+    public override async Task<FollowResponse> Follow(FollowRequest request,
         ServerCallContext context)
     {
-        var response = new Response
+        var userId = request.UserId;
+        var user = context.RetrieveUser();
+        if (await _userRepository.CountWithId(userId) is 0)
         {
-            Status = 200
-        };
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
+            message: UserServiceErrorMessages.UserDoesntExist);
+        }
         try
         {
-            var userId = request.UserId;
-
-            var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
-            if (await _userRepository.CountWithId(userId) is 0)
-            {
-                response.Error = "User you want to follow doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var following = true;
 
             if (!await _followRepository.FollowExists(user.Id, userId))
@@ -715,198 +573,116 @@ public class UserService : GrpcUser.GrpcUserBase
                 following = false;
             }
 
-            response.Data = Any.Pack(new FollowResponse
+            return new FollowResponse
             {
                 Following = following
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> IsFollowing(IsFollowingRequest request,
+    public override async Task<IsFollowingResponse> IsFollowing(IsFollowingRequest request,
         ServerCallContext context)
     {
-        var response = new Response
+        var userId = request.UserId;
+        var user = context.RetrieveUser();
+        if (await _userRepository.CountWithId(userId) is 0)
         {
-            Status = 200
-        };
+            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
+            message: UserServiceErrorMessages.UserDoesntExist);
+        }
+
         try
         {
-            var userId = request.UserId;
-
-            var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-            if (await _userRepository.CountWithId(userId) is 0)
-            {
-                response.Error = "User you follow doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var following = await _followRepository.FollowExists(user.Id, userId);
-
-            response.Data = Any.Pack(new IsFollowingResponse
+            return new IsFollowingResponse
             {
                 Following = following
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetTwoFactorByToken(GetTwoFactorByTokenRequest request, ServerCallContext context)
+    public override async Task<GetTwoFactorByTokenResponse> GetTwoFactorByToken(GetTwoFactorByTokenRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var token = request.Token;
             var user = await _userRepository.GetUserByToken(token);
 
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             var twoFactor = await _userRepository.GetTwoFactorById(user.Id);
 
-            response.Data = Any.Pack(new GetTwoFactorByTokenResponse
+            return new GetTwoFactorByTokenResponse
             {
                 Enabled = twoFactor
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> UpdateTwoFactor(UpdateTwoFactorRequest request, ServerCallContext context)
+    public override async Task<UpdateTwoFactorResponse> UpdateTwoFactor(UpdateTwoFactorRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var enabled = request.Enabled;
-
             var user = context.RetrieveUser();
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
             await _userRepository.UpdateTwoFactorById(user.Id, enabled);
-
-            response.Data = Any.Pack(new UpdateTwoFactorResponse
+            return new UpdateTwoFactorResponse
             {
                 Updated = enabled
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetUserByLogin(GetUserByLoginRequest request, ServerCallContext context)
+    public override async Task<GetUserByLoginResponse> GetUserByLogin(GetUserByLoginRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var login = request.Login.Trim();
-
             var user = await _userRepository.GetUserByLogin(login);
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
-            response.Data = Any.Pack(new GetUserByLoginResponse
+            return new GetUserByLoginResponse
             {
                 User = user.ToUserModel()
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetPostUserDataById(GetPostUserDataByIdRequest request, ServerCallContext context)
+    public override async Task<GetPostUserDataByIdResponse> GetPostUserDataById(GetPostUserDataByIdRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = await _userRepository.GetPostUserDataById(request.Id);
-
-            if (user is null)
-            {
-                response.Error = "User doesn't exist. Server error. Please contact with us";
-                response.Status = 400;
-                return response;
-            }
-
-            response.Data = Any.Pack(new GetPostUserDataByIdResponse
+            return new GetPostUserDataByIdResponse
             {
                 User = user.ToUserModel()
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
+            message: UserServiceErrorMessages.GenericError);
         }
     }
 }

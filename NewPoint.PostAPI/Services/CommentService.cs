@@ -9,6 +9,20 @@ namespace NewPoint.PostAPI.Services;
 
 public class CommentService : GrpcComment.GrpcCommentBase
 {
+    public static class CommentServiceErrorMessages
+    {
+        public const string GenericError = "Something went wrong. Please try again later. We are sorry";
+        public const string CommentNotFound = "Comment not found";
+        public const string Unauthorized = "User is not authorized to perform this action";
+    }
+
+    public static class CommentServiceErrorCodes
+    {
+        public const string GenericError = "generic_error";
+        public const string CommentNotFound = "comment_not_found";
+        public const string Unauthorized = "unauthorized";
+    }
+
     private readonly ICommentRepository _commentRepository;
     private readonly ILogger<CommentService> _logger;
     private readonly IPostRepository _postRepository;
@@ -23,13 +37,9 @@ public class CommentService : GrpcComment.GrpcCommentBase
         _logger = logger;
     }
 
-    public override async Task<Response> GetCommentsByPostId(GetCommentsByPostIdRequest request,
+    public override async Task<GetCommentsByPostIdResponse> GetCommentsByPostId(GetCommentsByPostIdRequest request,
         ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var comments = (await _commentRepository.GetCommentsByPostId(request.PostId))
@@ -70,23 +80,17 @@ public class CommentService : GrpcComment.GrpcCommentBase
                         ;
                     }).Select(comment => comment.Result).ToList();
 
-            response.Data = Any.Pack(new GetCommentsByPostIdResponse { Comments = { comments } });
-            return response;
+            return new GetCommentsByPostIdResponse { Comments = { comments } };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, CommentServiceErrorCodes.GenericError),
+                message: CommentServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> AddComment(AddCommentRequest request, ServerCallContext context)
+    public override async Task<AddCommentResponse> AddComment(AddCommentRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -95,38 +99,29 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 await _postRepository.GetCommentsById(request.PostId) + 1);
             await _commentRepository.Insert(request.PostId, user.Id, request.Content.Trim());
 
-            response.Data = Any.Pack(new AddCommentResponse
+            return new AddCommentResponse
             {
                 Added = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, CommentServiceErrorCodes.GenericError),
+                message: CommentServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> DeleteComment(DeleteCommentRequest request, ServerCallContext context)
+    public override async Task<DeleteCommentResponse> DeleteComment(DeleteCommentRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var comment = await _commentRepository.GetCommentById(request.CommentId);
             if (comment == null)
             {
-                response.Data = Any.Pack(new DeleteCommentResponse
+                return new DeleteCommentResponse
                 {
                     Deleted = true
-                });
-
-                return response;
+                };
             }
 
             await _postRepository.SetCommentsById(comment.PostId,
@@ -134,27 +129,20 @@ public class CommentService : GrpcComment.GrpcCommentBase
             await _commentRepository.DeleteCommentLikes(request.CommentId);
             await _commentRepository.Delete(request.CommentId);
 
-            response.Data = Any.Pack(new DeleteCommentResponse
+            return new DeleteCommentResponse
             {
                 Deleted = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, CommentServiceErrorCodes.GenericError),
+                message: CommentServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> LikeComment(LikeCommentRequest request, ServerCallContext context)
+    public override async Task<LikeCommentResponse> LikeComment(LikeCommentRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -163,27 +151,20 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 await _commentRepository.GetLikesById(request.CommentId) + 1);
             await _commentRepository.InsertCommentLike(request.CommentId, user.Id);
 
-            response.Data = Any.Pack(new LikeCommentResponse
+            return new LikeCommentResponse
             {
                 Liked = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, CommentServiceErrorCodes.GenericError),
+                message: CommentServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> UnLikeComment(UnLikeCommentRequest request, ServerCallContext context)
+    public override async Task<UnLikeCommentResponse> UnLikeComment(UnLikeCommentRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -192,18 +173,15 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 await _commentRepository.GetLikesById(request.CommentId) - 1);
             await _commentRepository.DeleteCommentLike(request.CommentId, user.Id);
 
-            response.Data = Any.Pack(new UnLikeCommentResponse
+            return new UnLikeCommentResponse
             {
                 Liked = false
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, CommentServiceErrorCodes.GenericError),
+                message: CommentServiceErrorMessages.GenericError);
         }
     }
 }

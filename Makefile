@@ -1,4 +1,4 @@
-COMPOSE_FILE = docker-compose.yaml
+COMPOSE_FILE = docker-compose.yml
 DC = docker compose -f $(COMPOSE_FILE)
 SERVICES := $(shell grep -E '^\s{2}[a-zA-Z0-9_-]+:' $(COMPOSE_FILE) | awk '{print $$1}' | tr -d ':')
 DATABASE_MIGRATIONS_SERVICE := database-migrations
@@ -82,6 +82,6 @@ build-migrations:
 migrate: build-migrations
 	docker run --rm --name database-migrations-container database-migrations
 
-.PHONY: clean
+.PHONY: clean-migrations
 clean-migrations:
 	docker rmi database-migrations || true

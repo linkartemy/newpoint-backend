@@ -11,6 +11,21 @@ namespace NewPoint.PostAPI.Services;
 
 public class PostService : GrpcPost.GrpcPostBase
 {
+    public static class PostServiceErrorMessages
+    {
+        public const string GenericError = "Something went wrong. Please try again later. We are sorry";
+        public const string PostNotFound = "Post not found";
+        public const string Unauthorized = "User is not authorized to perform this action";
+    }
+
+    public static class PostServiceErrorCodes
+    {
+        public const string GenericError = "generic_error";
+        public const string PostNotFound = "post_not_found";
+        public const string Unauthorized = "unauthorized";
+    }
+
+
     private readonly ILogger<PostService> _logger;
     private readonly IPostRepository _postRepository;
     private readonly IUserClient _userClient;
@@ -24,34 +39,26 @@ public class PostService : GrpcPost.GrpcPostBase
         _logger = logger;
     }
 
-    public override async Task<Response> AddPost(AddPostRequest request, ServerCallContext context)
+    public override async Task<AddPostResponse> AddPost(AddPostRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
+        var authorId = request.AuthorId;
+        var content = request.Content.Trim();
         try
         {
-            var authorId = request.AuthorId;
-            var content = request.Content.Trim();
             var id = await _postRepository.AddPost(authorId, content);
-            response.Data = Any.Pack(new AddPostResponse { Id = id });
-            return response;
+            return new AddPostResponse { Id = id };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> GetPosts(GetPostsRequest request, ServerCallContext context)
+    public override async Task<GetPostsResponse> GetPosts(GetPostsRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
@@ -79,23 +86,19 @@ public class PostService : GrpcPost.GrpcPostBase
                     return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
 
-            response.Data = Any.Pack(new GetPostsResponse { Posts = { posts } });
-            return response;
+            return new GetPostsResponse { Posts = { posts } };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> GetPostsByUserId(GetPostsByUserIdRequest request, ServerCallContext context)
+    public override async Task<GetPostsByUserIdResponse> GetPostsByUserId(GetPostsByUserIdRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken());
@@ -133,23 +136,19 @@ public class PostService : GrpcPost.GrpcPostBase
                     return post.ToPostModel();
                 }).Select(post => post.Result).ToList();
 
-            response.Data = Any.Pack(new GetPostsByUserIdResponse { Posts = { posts } });
-            return response;
+            return new GetPostsByUserIdResponse { Posts = { posts } };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> GetPostById(GetPostByIdRequest request, ServerCallContext context)
+    public override async Task<GetPostByIdResponse> GetPostById(GetPostByIdRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var post = await _postRepository.GetPost(request.Id);
@@ -171,24 +170,19 @@ public class PostService : GrpcPost.GrpcPostBase
 
             post.Liked = await _postRepository.IsLikedByUser(post.Id, context.RetrieveUser().Id);
 
-            response.Data = Any.Pack(new GetPostByIdResponse { Post = post.ToPostModel() });
-
-            return response;
+            return new GetPostByIdResponse { Post = post.ToPostModel() };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> LikePost(LikePostRequest request, ServerCallContext context)
+    public override async Task<LikePostResponse> LikePost(LikePostRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -196,27 +190,22 @@ public class PostService : GrpcPost.GrpcPostBase
             await _postRepository.SetLikesById(request.PostId, await _postRepository.GetLikesById(request.PostId) + 1);
             await _postRepository.InsertPostLike(request.PostId, user.Id);
 
-            response.Data = Any.Pack(new LikePostResponse
+            return new LikePostResponse
             {
                 Liked = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> UnLikePost(UnLikePostRequest request, ServerCallContext context)
+    public override async Task<UnLikePostResponse> UnLikePost(UnLikePostRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -224,53 +213,43 @@ public class PostService : GrpcPost.GrpcPostBase
             await _postRepository.SetLikesById(request.PostId, await _postRepository.GetLikesById(request.PostId) - 1);
             await _postRepository.DeletePostLike(request.PostId, user.Id);
 
-            response.Data = Any.Pack(new UnLikePostResponse
+            return new UnLikePostResponse
             {
                 Liked = false
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> SharePost(SharePostRequest request, ServerCallContext context)
+    public override async Task<SharePostResponse> SharePost(SharePostRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             await _postRepository.SetSharesById(request.PostId,
                 await _postRepository.GetSharesById(request.PostId) + 1);
 
-            response.Data = Any.Pack(new SharePostResponse
+            return new SharePostResponse
             {
                 Shared = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> AddPostView(AddPostViewRequest request, ServerCallContext context)
+    public override async Task<AddPostViewResponse> AddPostView(AddPostViewRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var views = await _postRepository.GetPostViewsById(request.PostId) + 1;
@@ -278,27 +257,22 @@ public class PostService : GrpcPost.GrpcPostBase
             await _postRepository.SetPostViewsById(request.PostId,
                 views);
 
-            response.Data = Any.Pack(new AddPostViewResponse
+            return new AddPostViewResponse
             {
                 Views = views
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 
-    public override async Task<Response> DeletePost(DeletePostRequest request, ServerCallContext context)
+    public override async Task<DeletePostResponse> DeletePost(DeletePostRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var comments = await _commentRepository.GetCommentsByPostId(request.PostId);
@@ -312,18 +286,17 @@ public class PostService : GrpcPost.GrpcPostBase
             await _postRepository.DeletePostLikes(request.PostId);
             await _postRepository.DeletePost(request.PostId);
 
-            response.Data = Any.Pack(new DeletePostResponse
+            return new DeletePostResponse
             {
                 Deleted = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
         }
     }
 }
