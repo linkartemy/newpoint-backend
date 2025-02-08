@@ -26,15 +26,9 @@ public class UserClient : IUserClient
             var headers = new Metadata();
             headers.Add("Authorization", $"Bearer {token}");
             var response = await Client.GetUserByTokenAsync(new GetUserByTokenRequest(), headers);
-            if (response.Error != null && response.Error.Length > 0)
-            {
-                return false;
-            }
-            return response != null;
+            return true;
         }
-        catch (Exception e)
-        {
-        }
+        catch (Exception e) { }
         return false;
     }
 
@@ -45,28 +39,23 @@ public class UserClient : IUserClient
             var headers = new Metadata();
             headers.Add("Authorization", $"Bearer {token}");
             var response = await Client.GetPostUserDataByIdAsync(new GetPostUserDataByIdRequest { Id = id }, headers);
-            if (response.Error != null && response.Error.Length > 0)
-            {
-                throw new RpcException(new Status(StatusCode.Internal, response.Error));
-            }
-            return response.Data.Unpack<GetPostUserDataByIdResponse>().User.ToUser();
+            return response.User.ToUser();
         }
-        catch (Exception e)
-        {
-        }
+        catch (Exception e) { }
         return null;
     }
 
     public async Task<User> GetUserByToken(string token)
     {
-        var headers = new Metadata();
-        headers.Add("Authorization", $"Bearer {token}");
-        var response = await Client.GetUserByTokenAsync(new GetUserByTokenRequest(), headers);
-        if (response.Error != null && response.Error.Length > 0)
+        try
         {
-            throw new RpcException(new Status(StatusCode.Internal, response.Error));
+            var headers = new Metadata();
+            headers.Add("Authorization", $"Bearer {token}");
+            var response = await Client.GetUserByTokenAsync(new GetUserByTokenRequest(), headers);
+            return response.User.ToUser();
         }
-        return response.Data.Unpack<GetUserByTokenResponse>().User.ToUser();
+        catch (Exception e) { }
+        return null;
     }
 }
 

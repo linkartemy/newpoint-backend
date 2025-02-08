@@ -34,8 +34,8 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Copy the appsettings.json file
-COPY configs/error-localization/appsettings.errorlocalizationapi.json /app/appsettings.json
-COPY localizations/*.json /app/localizations/
+COPY configs/error-localization-service/appsettings.error-localization-service.json /app/appsettings.json
+COPY NewPoint.ErrorLocalizationAPI/localizations/*.json /app/localizations/
 
 # Entry point for the application
 ENTRYPOINT ["dotnet", "NewPoint.ErrorLocalizationAPI.dll"]

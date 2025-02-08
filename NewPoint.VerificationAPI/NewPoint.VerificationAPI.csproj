@@ -17,9 +17,9 @@
         <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
         <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.67.0" />
         <PackageReference Include="Grpc.Core" Version="2.46.6" />
-        <PackageReference Include="Grpc.Net.Client" Version="2.40.0" />
-        <PackageReference Include="Grpc.Tools" Version="2.40.0" />
-        <PackageReference Include="Google.Protobuf" Version="3.27.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.67.0" />
+        <PackageReference Include="Google.Protobuf" Version="3.29.3" />
         <PackageReference Include="HashiCorp.Vault" Version="0.3.0" />
         <PackageReference Include="MailKit" Version="4.1.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />

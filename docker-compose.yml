@@ -9,12 +9,13 @@ services:
       - ./configs/redis.conf:/usr/local/etc/redis/redis.conf
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     networks:
-      - grpc_network
+      - grpc-network
 
   newpoint-user-service:
     build:
       context: .
       dockerfile: NewPoint.UserAPI/Dockerfile
+    container_name: user_service_container
     ports:
       - "5137:5137"
     volumes:
@@ -26,6 +27,7 @@ services:
     build:
       context: .
       dockerfile: NewPoint.PostAPI/Dockerfile
+    container_name: post_service_container
     ports:
       - "5139:5139"
     volumes:
@@ -37,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: NewPoint.ArticleAPI/Dockerfile
+    container_name: article_service_container
     ports:
       - "5140:5140"
     volumes:
@@ -48,6 +51,7 @@ services:
     build:
       context: .
       dockerfile: NewPoint.ObjectAPI/Dockerfile
+    container_name: object_service_container
     ports:
       - "5141:5141"
     volumes:
@@ -59,6 +63,7 @@ services:
     build:
       context: .
       dockerfile: NewPoint.FeedAPI/Dockerfile
+    container_name: feed_service_container
     ports:
       - "5142:5142"
     volumes:
@@ -70,6 +75,7 @@ services:
     build:
       context: .
       dockerfile: NewPoint.VerificationAPI/Dockerfile
+    container_name: verification_service_container
     ports:
       - "5138:5138"
     volumes:
@@ -78,7 +84,9 @@ services:
       - grpc-network
 
   newpoint-error-localization-service:
-    build: .
+    build:
+      context: .
+      dockerfile: NewPoint.ErrorLocalizationAPI/Dockerfile
     container_name: error_localization_service_container
     restart: always
     depends_on:
@@ -94,6 +102,7 @@ services:
 
   nginx:
     image: nginx:latest
+    container_name: nginx_container
     ports:
       - "80:80"
     volumes:

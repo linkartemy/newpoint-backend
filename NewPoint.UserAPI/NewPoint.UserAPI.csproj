@@ -13,7 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="Dapper" Version="2.1.66" />
-        <PackageReference Include="Google.Protobuf" Version="3.27.0" />
+        <PackageReference Include="Google.Protobuf" Version="3.29.3" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
         <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.67.0" />
         <PackageReference Include="HashiCorp.Vault" Version="0.3.0" />

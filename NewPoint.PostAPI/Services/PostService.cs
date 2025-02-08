@@ -299,4 +299,24 @@ public class PostService : GrpcPost.GrpcPostBase
             );
         }
     }
+
+    public override async Task<IsPostLikedByUserResponse> IsPostLikedByUser(IsPostLikedByUserRequest request, ServerCallContext context)
+    {
+        try
+        {
+            var liked = await _postRepository.IsLikedByUser(request.PostId, context.RetrieveUser().Id);
+
+            return new IsPostLikedByUserResponse
+            {
+                Liked = liked
+            };
+        }
+        catch (Exception)
+        {
+            throw new RpcException(
+                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+                message: PostServiceErrorMessages.GenericError
+            );
+        }
+    }
 }
