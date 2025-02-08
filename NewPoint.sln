@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.ObjectAPI", "NewPo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.FeedAPI", "NewPoint.FeedAPI\NewPoint.FeedAPI.csproj", "{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewPoint.ErrorLocalizationAPI", "NewPoint.ErrorLocalizationAPI\NewPoint.ErrorLocalizationAPI.csproj", "{5810626E-4310-47CD-B6F8-A63CADCC1C0A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC2771AC-77C2-4E1A-BD17-4A953F0B54D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5810626E-4310-47CD-B6F8-A63CADCC1C0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5810626E-4310-47CD-B6F8-A63CADCC1C0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5810626E-4310-47CD-B6F8-A63CADCC1C0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5810626E-4310-47CD-B6F8-A63CADCC1C0A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

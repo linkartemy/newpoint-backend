@@ -39,6 +39,7 @@ public class VaultConfigurationProvider : ConfigurationProvider
         await GetSmtpCredentials();
         await GetS3Credentials();
         await GetJwtToken();
+        await GetRedisCredentials();
     }
 
     public async Task<Secret<SecretData>> GetSecretAsync(string path)
@@ -136,6 +137,24 @@ public class VaultConfigurationProvider : ConfigurationProvider
         AuthenticationHandler.JwtToken = jwtConfig.Token;
 
         Data.Add("jwt:token", jwtConfig.Token);
+    }
+
+    public async Task GetRedisCredentials()
+    {
+        var connectionString = "";
+
+        if (_config.SecretType == "kv")
+        {
+            var secrets = await GetSecretAsync("ConnectionStrings");
+
+            if (secrets?.Data?.Data != null && secrets.Data.Data.TryGetValue("Redis", out object secretValue))
+            {
+                connectionString = secretValue.ToString();
+            }
+        }
+        RedisHandler.ConnectionString = connectionString!;
+
+        Data.Add("redis:connectionString", connectionString);
     }
 }
 

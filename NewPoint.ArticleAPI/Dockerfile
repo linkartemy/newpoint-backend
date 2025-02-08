@@ -34,7 +34,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Copy the appsettings.json file
-COPY configs/articleapi/appsettings.articleapi.json /app/appsettings.json
+COPY configs/article-service/appsettings.article-service.json /app/appsettings.json
 
 # Entry point for the application
 ENTRYPOINT ["dotnet", "NewPoint.ArticleAPI.dll"]

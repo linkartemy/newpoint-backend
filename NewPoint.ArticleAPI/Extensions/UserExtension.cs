@@ -15,16 +15,22 @@ public static class UserExtension
             Login = user.Login,
             Name = user.Name,
             Surname = user.Surname,
-            Email = user.Email.FromNullableString(),
-            Description = user.Description.FromNullableString(),
-            Location = user.Location.FromNullableString(),
+            Email = user.HasEmail ? user.Email : null,
+            Description = user.HasDescription ? user.Description : null,
+            Location = user.HasLocation ? user.Location : null,
             ProfileImageId = user.ProfileImageId,
             HeaderImageId = user.HeaderImageId,
-            IP = user.Ip.FromNullableString(),
-            Phone = user.Phone.FromNullableString(),
-            LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(user.LastLoginTimestamp.FromNullableTimestamp() ?? new Timestamp()) ?? DateTime.MinValue,
-            RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(user.RegistrationTimestamp.FromNullableTimestamp() ?? new Timestamp()) ?? DateTime.MinValue,
-            BirthDate = DateTimeHandler.TimestampToDateTime(user.BirthDate.FromNullableTimestamp() ?? new Timestamp()) ?? DateTime.MinValue,
+            IP = user.HasIp ? user.Ip : null,
+            Phone = user.HasPhone ? user.Phone : null,
+            LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(
+                user.LastLoginTimestampWrapperCase == UserModel.LastLoginTimestampWrapperOneofCase.LastLoginTimestamp
+                ? user.LastLoginTimestamp : new Timestamp()) ?? DateTime.MinValue,
+            RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(
+                user.RegistrationTimestampWrapperCase == UserModel.RegistrationTimestampWrapperOneofCase.RegistrationTimestamp
+                ? user.RegistrationTimestamp : new Timestamp()) ?? DateTime.MinValue,
+            BirthDate = DateTimeHandler.TimestampToDateTime(
+                user.BirthDateWrapperCase == UserModel.BirthDateWrapperOneofCase.BirthDate
+                ? user.BirthDate : new Timestamp()) ?? DateTime.MinValue,
             Followers = user.Followers,
             Following = user.Following
         };

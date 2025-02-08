@@ -7,57 +7,66 @@ using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
 using NewPoint.ObjectAPI.Repositories;
 
-namespace NewPoint.ObjectAPI.Services;
-
-public class ImageService : GrpcImage.GrpcImageBase
+namespace NewPoint.ObjectAPI.Services
 {
-    private readonly ILogger<ImageService> _logger;
-    private readonly IImageRepository _imageRepository;
-    private readonly IObjectRepository _objectRepository;
-
-    public ImageService(IImageRepository imageRepository, IObjectRepository objectRepository,
-        ILogger<ImageService> logger)
+    public static class ImageServiceErrorMessages
     {
-        _imageRepository = imageRepository;
-        _objectRepository = objectRepository;
-        _logger = logger;
+        public const string GenericError = "Something went wrong. Please try again later. We are sorry";
+        public const string ImageNotFound = "Image not found";
     }
 
-    public override async Task<Response> GetImageById(GetImageByIdRequest request, ServerCallContext context)
+    public static class ImageServiceErrorCodes
     {
-        var response = new Response
+        public const string GenericError = "generic_error";
+        public const string ImageNotFound = "image_not_found";
+    }
+
+    public class ImageService : GrpcImage.GrpcImageBase
+    {
+        private readonly ILogger<ImageService> _logger;
+        private readonly IImageRepository _imageRepository;
+        private readonly IObjectRepository _objectRepository;
+
+        public ImageService(
+            IImageRepository imageRepository,
+            IObjectRepository objectRepository,
+            ILogger<ImageService> logger)
         {
-            Status = 200
-        };
-        try
+            _imageRepository = imageRepository;
+            _objectRepository = objectRepository;
+            _logger = logger;
+        }
+
+        public override async Task<GetImageByIdResponse> GetImageById(GetImageByIdRequest request, ServerCallContext context)
         {
-            if (await _imageRepository.ImageExists(request.Id) is false)
+            if (!await _imageRepository.ImageExists(request.Id))
             {
-                response.Error = "Image doesn't exist";
-                response.Status = 400;
-                return response;
+                throw new RpcException(
+                    new Status(StatusCode.NotFound, ImageServiceErrorCodes.ImageNotFound),
+                    ImageServiceErrorMessages.ImageNotFound);
             }
 
-            var name = await _imageRepository.GetImageNameById(request.Id);
-            var image = await _objectRepository.GetObjectByName("user-images", name);
-
-            response.Data = Any.Pack(new GetImageByIdResponse
+            try
             {
-                Image = new ImageModel
+                var name = await _imageRepository.GetImageNameById(request.Id);
+                var image = await _objectRepository.GetObjectByName("user-images", name);
+
+                return new GetImageByIdResponse
                 {
-                    Id = request.Id,
-                    Data = ByteString.CopyFrom(image)
-                }
-            });
-            return response;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error while getting image by id");
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            throw new RpcException(new Status(StatusCode.Internal, response.Error));
-            return response;
+                    Image = new ImageModel
+                    {
+                        Id = request.Id,
+                        Data = ByteString.CopyFrom(image)
+                    }
+                };
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error while getting image by id");
+                throw new RpcException(
+                    new Status(StatusCode.Internal, ImageServiceErrorCodes.GenericError),
+                    ImageServiceErrorMessages.GenericError);
+            }
         }
     }
 }

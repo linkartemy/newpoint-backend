@@ -26,11 +26,4 @@ public static class PostExtension
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
         };
     }
-
-    public static NullablePost ToNullablePost(this PostModel? data)
-    {
-        return data is null
-            ? new NullablePost { Null = new NullValue() }
-            : new NullablePost { Data = data };
-    }
 }

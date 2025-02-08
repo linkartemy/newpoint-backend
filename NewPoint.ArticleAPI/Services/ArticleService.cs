@@ -11,6 +11,16 @@ namespace NewPoint.ArticleAPI.Services;
 
 public class ArticleService : GrpcArticle.GrpcArticleBase
 {
+    public static class ArticleServiceErrorMessages
+    {
+        public const string GenericError = "Something went wrong. Please try again later. We are sorry";
+    }
+
+    public static class ArticleServiceErrorCodes
+    {
+        public const string GenericError = "generic_error";
+    }
+
     private readonly ILogger<ArticleService> _logger;
     private readonly IArticleRepository _articleRepository;
     private readonly IUserClient _userClient;
@@ -24,35 +34,25 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         _logger = logger;
     }
 
-    public override async Task<Response> AddArticle(AddArticleRequest request, ServerCallContext context)
+    public override async Task<AddArticleResponse> AddArticle(AddArticleRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
+        var authorId = request.AuthorId;
+        var title = request.Title.Trim();
+        var content = request.Content.Trim();
         try
         {
-            var authorId = request.AuthorId;
-            var title = request.Title.Trim();
-            var content = request.Content.Trim();
             var id = await _articleRepository.AddArticle(authorId, title, content);
-            response.Data = Any.Pack(new AddArticleResponse { Id = id });
-            return response;
+            return new AddArticleResponse { Id = id };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetArticles(GetArticlesRequest request, ServerCallContext context)
+    public override async Task<GetArticlesResponse> GetArticles(GetArticlesRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var articles = (await _articleRepository.GetArticles()).OrderByDescending(article => article.CreationTimestamp).Select(
@@ -80,23 +80,17 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                     return article.ToArticleModel();
                 }).Select(article => article.Result).ToList();
 
-            response.Data = Any.Pack(new GetArticlesResponse { Articles = { articles } });
-            return response;
+            return new GetArticlesResponse { Articles = { articles } };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetArticlesByUserId(GetArticlesByUserIdRequest request, ServerCallContext context)
+    public override async Task<GetArticlesByUserIdResponse> GetArticlesByUserId(GetArticlesByUserIdRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken());
@@ -134,23 +128,17 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
                     return article.ToArticleModel();
                 }).Select(article => article.Result).ToList();
 
-            response.Data = Any.Pack(new GetArticlesByUserIdResponse { Articles = { articles } });
-            return response;
+            return new GetArticlesByUserIdResponse { Articles = { articles } };
         }
         catch (Exception)
         {
-            response.Status = 500;
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> GetArticleById(GetArticleByIdRequest request, ServerCallContext context)
+    public override async Task<GetArticleByIdResponse> GetArticleById(GetArticleByIdRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var article = await _articleRepository.GetArticle(request.Id);
@@ -172,24 +160,17 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
 
             article.Liked = await _articleRepository.IsLikedByUser(article.Id, context.RetrieveUser().Id);
 
-            response.Data = Any.Pack(new GetArticleByIdResponse { Article = article.ToArticleModel() });
-
-            return response;
+            return new GetArticleByIdResponse { Article = article.ToArticleModel() };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> LikeArticle(LikeArticleRequest request, ServerCallContext context)
+    public override async Task<LikeArticleResponse> LikeArticle(LikeArticleRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -197,27 +178,20 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             await _articleRepository.SetLikesById(request.ArticleId, await _articleRepository.GetLikesById(request.ArticleId) + 1);
             await _articleRepository.InsertArticleLike(request.ArticleId, user.Id);
 
-            response.Data = Any.Pack(new LikeArticleResponse
+            return new LikeArticleResponse
             {
                 Liked = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> UnLikeArticle(UnLikeArticleRequest request, ServerCallContext context)
+    public override async Task<UnLikeArticleResponse> UnLikeArticle(UnLikeArticleRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var user = context.RetrieveUser();
@@ -225,53 +199,39 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             await _articleRepository.SetLikesById(request.ArticleId, await _articleRepository.GetLikesById(request.ArticleId) - 1);
             await _articleRepository.DeleteArticleLike(request.ArticleId, user.Id);
 
-            response.Data = Any.Pack(new UnLikeArticleResponse
+            return new UnLikeArticleResponse
             {
                 Liked = false
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> ShareArticle(ShareArticleRequest request, ServerCallContext context)
+    public override async Task<ShareArticleResponse> ShareArticle(ShareArticleRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             await _articleRepository.SetSharesById(request.ArticleId,
                 await _articleRepository.GetSharesById(request.ArticleId) + 1);
 
-            response.Data = Any.Pack(new ShareArticleResponse
+            return new ShareArticleResponse
             {
                 Shared = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> AddArticleView(AddArticleViewRequest request, ServerCallContext context)
+    public override async Task<AddArticleViewResponse> AddArticleView(AddArticleViewRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var views = await _articleRepository.GetArticleViewsById(request.ArticleId) + 1;
@@ -279,27 +239,20 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             await _articleRepository.SetArticleViewsById(request.ArticleId,
                 views);
 
-            response.Data = Any.Pack(new AddArticleViewResponse
+            return new AddArticleViewResponse
             {
                 Views = views
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> DeleteArticle(DeleteArticleRequest request, ServerCallContext context)
+    public override async Task<DeleteArticleResponse> DeleteArticle(DeleteArticleRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
             var comments = await _articleCommentRepository.GetCommentsByArticleId(request.ArticleId);
@@ -313,41 +266,31 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             await _articleRepository.DeleteArticleLikes(request.ArticleId);
             await _articleRepository.DeleteArticle(request.ArticleId);
 
-            response.Data = Any.Pack(new DeleteArticleResponse
+            return new DeleteArticleResponse
             {
                 Deleted = true
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 
-    public override async Task<Response> IsLikedByUser(IsLikedByUserRequest request, ServerCallContext context)
+    public override async Task<IsArticleLikedByUserResponse> IsArticleLikedByUser(IsArticleLikedByUserRequest request, ServerCallContext context)
     {
-        var response = new Response
-        {
-            Status = 200
-        };
         try
         {
-            response.Data = Any.Pack(new IsLikedByUserResponse
+            return new IsArticleLikedByUserResponse
             {
                 Liked = await _articleRepository.IsLikedByUser(request.ArticleId, request.UserId)
-            });
-
-            return response;
+            };
         }
         catch (Exception)
         {
-            response.Error = "Something went wrong. Please try again later. We are sorry";
-            response.Status = 500;
-            return response;
+            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
+            message: ArticleServiceErrorMessages.GenericError);
         }
     }
 }
