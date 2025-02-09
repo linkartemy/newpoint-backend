@@ -59,34 +59,63 @@ public class PostService : GrpcPost.GrpcPostBase
 
     public override async Task<GetPostsResponse> GetPosts(GetPostsRequest request, ServerCallContext context)
     {
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+        var cursorCreatedAt = request.CursorCreatedAt?.ToDateTime();
+        var cursorId = request.CursorId > 0 ? request.CursorId : (long?)null;
+
         try
         {
-            var posts = (await _postRepository.GetPosts()).OrderByDescending(post => post.CreationTimestamp).Select(
-                async post =>
+            var posts = (await _postRepository.GetPaginatedPosts(pageSize, cursorCreatedAt, cursorId)).ToList();
+
+            var hasMore = posts.Count > pageSize;
+            var paginatedPosts = posts.Take(pageSize).ToList();
+
+            var postsResponse = new List<PostModel>();
+            foreach (var post in paginatedPosts)
+            {
+                var postAuthor = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken()) ?? new User
                 {
-                    var postAuthor = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken());
-                    if (postAuthor is null)
-                    {
-                        post.Login = "Unknown";
-                        post.Name = "Unknown";
-                        post.Surname = "";
-                    }
-                    else
-                    {
-                        post.Login = postAuthor.Login;
-                        post.Name = postAuthor.Name;
-                        post.Surname = postAuthor.Surname;
-                        post.ProfileImageId = postAuthor.ProfileImageId;
-                    }
+                    Login = "Unknown",
+                    Name = "Unknown",
+                    Surname = "",
+                    ProfileImageId = 0
+                };
 
-                    var user = context.RetrieveUser();
-                    post.Liked =
-                        await _postRepository.IsLikedByUser(post.Id, user.Id);
+                var user = context.RetrieveUser();
+                post.Liked = await _postRepository.IsLikedByUser(post.Id, user.Id);
+                // TODO: Implement bookmarking
+                // post.Bookmarked = await _postRepository.IsBookmarkedByUser(post.Id, user.Id);
 
-                    return post.ToPostModel();
-                }).Select(post => post.Result).ToList();
+                postsResponse.Add(new PostModel
+                {
+                    Id = post.Id,
+                    AuthorId = post.AuthorId,
+                    Login = postAuthor.Login,
+                    Name = postAuthor.Name,
+                    Surname = postAuthor.Surname,
+                    ProfileImageId = postAuthor.ProfileImageId,
+                    Content = post.Content,
+                    Images = post.Images,
+                    Likes = post.Likes,
+                    Shares = post.Shares,
+                    Comments = post.Comments,
+                    Views = post.Views,
+                    Liked = post.Liked,
+                    // Bookmarked = post.Bookmarked, TODO: Implement bookmarking
+                    CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
+                });
+            }
 
-            return new GetPostsResponse { Posts = { posts } };
+            var nextCursorCreatedAt = hasMore ? paginatedPosts.Last().CreationTimestamp : (DateTime?)null;
+            var nextCursorId = hasMore ? paginatedPosts.Last().Id : 0;
+
+            return new GetPostsResponse
+            {
+                Posts = { postsResponse },
+                NextCursorCreatedAt = nextCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextCursorCreatedAt.Value) : null,
+                NextCursorId = nextCursorId,
+                HasMore = hasMore
+            };
         }
         catch (Exception)
         {
@@ -99,44 +128,68 @@ public class PostService : GrpcPost.GrpcPostBase
 
     public override async Task<GetPostsByUserIdResponse> GetPostsByUserId(GetPostsByUserIdRequest request, ServerCallContext context)
     {
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+        var cursorCreatedAt = request.CursorCreatedAt?.ToDateTime();
+        var cursorId = request.CursorId > 0 ? request.CursorId : (long?)null;
+
         try
         {
-            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken());
-            if (user is null)
+            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken()) ?? new User
             {
-                user = new User
+                Login = "Unknown", // TODO: Implement user not found handling
+                Name = "Unknown",
+                Surname = "",
+                ProfileImageId = 0
+            };
+
+            var posts = (await _postRepository.GetPaginatedPostsByUserId(request.UserId, pageSize, cursorCreatedAt, cursorId)).ToList();
+
+            var hasMore = posts.Count > pageSize;
+            var paginatedPosts = posts.Take(pageSize).ToList();
+
+            var postsResponse = new List<PostModel>();
+            foreach (var post in paginatedPosts)
+            {
+                post.Login = user.Login;
+                post.Name = user.Name;
+                post.Surname = user.Surname;
+                post.ProfileImageId = user.ProfileImageId;
+
+                var userByToken = context.RetrieveUser();
+                post.Liked = await _postRepository.IsLikedByUser(post.Id, userByToken.Id);
+                // TODO: Implement bookmarking
+                // post.Bookmarked = await _postRepository.IsBookmarkedByUser(post.Id, userByToken.Id);
+
+                postsResponse.Add(new PostModel
                 {
-                    Login = "Unknown",
-                    Name = "Unknown",
-                    Surname = ""
-                };
+                    Id = post.Id,
+                    AuthorId = post.AuthorId,
+                    Login = post.Login,
+                    Name = post.Name,
+                    Surname = post.Surname,
+                    ProfileImageId = post.ProfileImageId,
+                    Content = post.Content,
+                    Images = post.Images,
+                    Likes = post.Likes,
+                    Shares = post.Shares,
+                    Comments = post.Comments,
+                    Views = post.Views,
+                    Liked = post.Liked,
+                    // Bookmarked = post.Bookmarked, TODO: Implement bookmarking
+                    CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
+                });
             }
 
-            var lastPostId = request.LastPostId;
-            if (lastPostId == -1)
+            var nextCursorCreatedAt = hasMore ? paginatedPosts.Last().CreationTimestamp : (DateTime?)null;
+            var nextCursorId = hasMore ? paginatedPosts.Last().Id : 0;
+
+            return new GetPostsByUserIdResponse
             {
-                lastPostId = await _postRepository.GetMaxId();
-            }
-
-            var posts = (await _postRepository.GetPostsFromId(lastPostId))
-            .Where(post => post.AuthorId == request.UserId)
-            .OrderByDescending(post => post.CreationTimestamp)
-            .Select(
-                async post =>
-                {
-                    post.Login = user.Login;
-                    post.Name = user.Name;
-                    post.Surname = user.Surname;
-                    post.ProfileImageId = user.ProfileImageId;
-
-                    post.Liked =
-                        await _postRepository.IsLikedByUser(post.Id,
-                            context.RetrieveUser().Id);
-
-                    return post.ToPostModel();
-                }).Select(post => post.Result).ToList();
-
-            return new GetPostsByUserIdResponse { Posts = { posts } };
+                Posts = { postsResponse },
+                NextCursorCreatedAt = nextCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextCursorCreatedAt.Value) : null,
+                NextCursorId = nextCursorId,
+                HasMore = hasMore
+            };
         }
         catch (Exception)
         {

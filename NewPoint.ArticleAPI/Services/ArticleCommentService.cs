@@ -37,47 +37,63 @@ public class ArticleCommentService : GrpcArticleComment.GrpcArticleCommentBase
     public override async Task<GetCommentsByArticleIdResponse> GetCommentsByArticleId(GetCommentsByArticleIdRequest request,
         ServerCallContext context)
     {
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+        var cursorCreatedAt = request.CursorCreatedAt?.ToDateTime();
+        var cursorId = request.CursorId > 0 ? request.CursorId : (long?)null;
+
         try
         {
-            var comments = (await _articleCommentRepository.GetCommentsByArticleId(request.ArticleId))
-                .OrderByDescending(article => article.CreationTimestamp).Select(
-                    async comment =>
-                    {
-                        var author = await _userClient.GetPostUserDataById(comment.UserId, context.RetrieveToken());
-                        if (author is null)
-                        {
-                            comment.Login = "Unknown";
-                            comment.Name = "Unknown";
-                            comment.Surname = "";
-                        }
-                        else
-                        {
-                            comment.Login = author.Login;
-                            comment.Name = author.Name;
-                            comment.Surname = author.Surname;
-                        }
+            var comments = (await _articleCommentRepository.GetCommentsByArticleIdPaginated(request.ArticleId, pageSize, cursorCreatedAt, cursorId)).ToList();
+            var hasMore = comments.Count > pageSize;
+            var paginatedComments = comments.Take(pageSize).ToList();
 
-                        var user = context.RetrieveUser();
-                        comment.Liked =
-                            await _articleCommentRepository.IsLikedByUser(comment.Id,
-                                user.Id);
+            var commentsResponse = new List<ArticleCommentModel>();
 
-                        return new ArticleCommentModel
-                        {
-                            Id = comment.Id,
-                            UserId = comment.UserId,
-                            Login = comment.Login,
-                            Name = comment.Name,
-                            Surname = comment.Surname,
-                            Content = comment.Content,
-                            Likes = comment.Likes,
-                            Liked = comment.Liked,
-                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
-                        };
-                        ;
-                    }).Select(comment => comment.Result).ToList();
+            foreach (var comment in paginatedComments)
+            {
+                var author = await _userClient.GetPostUserDataById(comment.UserId, context.RetrieveToken());
+                if (author == null)
+                {
+                    comment.Login = "Unknown";
+                    comment.Name = "Unknown";
+                    comment.Surname = "";
+                }
+                else
+                {
+                    comment.Login = author.Login;
+                    comment.Name = author.Name;
+                    comment.Surname = author.Surname;
+                }
 
-            return new GetCommentsByArticleIdResponse { Comments = { comments } };
+                var user = context.RetrieveUser();
+                comment.Liked = await _articleCommentRepository.IsLikedByUser(comment.Id, user.Id);
+
+                commentsResponse.Add(new ArticleCommentModel
+                {
+                    Id = comment.Id,
+                    UserId = comment.UserId,
+                    ArticleId = comment.ArticleId,
+                    Login = comment.Login,
+                    Name = comment.Name,
+                    Surname = comment.Surname,
+                    Content = comment.Content,
+                    Likes = comment.Likes,
+                    Liked = comment.Liked,
+                    // Views = comment.Views, TODO: Add views to the comment model
+                    CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
+                });
+            }
+
+            var nextCursorCreatedAt = hasMore ? paginatedComments.Last().CreationTimestamp : (DateTime?)null;
+            var nextCursorId = hasMore ? paginatedComments.Last().Id : 0;
+
+            return new GetCommentsByArticleIdResponse
+            {
+                Comments = { commentsResponse },
+                NextCursorCreatedAt = nextCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextCursorCreatedAt.Value) : null,
+                NextCursorId = nextCursorId,
+                HasMore = hasMore
+            };
         }
         catch (Exception)
         {

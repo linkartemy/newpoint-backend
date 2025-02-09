@@ -42,6 +42,23 @@ public class PostRepository : IPostRepository
         return reader;
     }
 
+    public async Task<IEnumerable<Post>> GetPaginatedPosts(int pageSize, DateTime? cursorCreatedAt, long? cursorId)
+    {
+        var sql = @$"
+        SELECT * FROM {TableName}
+        WHERE (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+               (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+        ORDER BY creation_timestamp DESC, id DESC
+        LIMIT @PageSize + 1;";
+
+        return await DatabaseHandler.Connection.QueryAsync<Post>(sql, new
+        {
+            CursorCreatedAt = cursorCreatedAt,
+            CursorId = cursorId ?? long.MaxValue,
+            PageSize = pageSize
+        });
+    }
+
     public async Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId)
     {
         var reader = await DatabaseHandler.Connection.QueryAsync<Post>(@$"
@@ -61,6 +78,26 @@ public class PostRepository : IPostRepository
             new { authorId });
         return reader;
     }
+
+    public async Task<IEnumerable<Post>> GetPaginatedPostsByUserId(long userId, int pageSize, DateTime? cursorCreatedAt, long? cursorId)
+    {
+        var sql = @$"
+        SELECT * FROM {TableName}
+        WHERE author_id = @UserId
+        AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+             (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+        ORDER BY creation_timestamp DESC, id DESC
+        LIMIT @PageSize + 1;";
+
+        return await DatabaseHandler.Connection.QueryAsync<Post>(sql, new
+        {
+            UserId = userId,
+            CursorCreatedAt = cursorCreatedAt,
+            CursorId = cursorId ?? long.MaxValue,
+            PageSize = pageSize
+        });
+    }
+
 
     public async Task<IEnumerable<Post>> GetPostsFromId(long id)
     {
@@ -272,7 +309,9 @@ public interface IPostRepository
 {
     Task<long> AddPost(long authorId, string content);
     Task<IEnumerable<Post>> GetPosts();
+    Task<IEnumerable<Post>> GetPaginatedPosts(int pageSize, DateTime? cursorCreatedAt, long? cursorId);
     Task<IEnumerable<Post>> GetPostsByAuthorId(long authorId);
+    Task<IEnumerable<Post>> GetPaginatedPostsByUserId(long userId, int pageSize, DateTime? cursorCreatedAt, long? cursorId);
     Task<IEnumerable<Post>> GetPostsFromId(long id);
     Task<long> GetMaxId();
     Task<Post> GetPost(long postId);

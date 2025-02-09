@@ -48,6 +48,28 @@ public class ArticleCommentRepository : IArticleCommentRepository
         return comments;
     }
 
+    public async Task<IEnumerable<ArticleComment?>> GetCommentsByArticleIdPaginated(long articleId, int pageSize, DateTime? cursorCreatedAt, long? cursorId)
+    {
+        var sql = @$"
+        SELECT *
+        FROM {TableName}
+        WHERE article_id = @ArticleId
+        AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+            (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+        ORDER BY creation_timestamp DESC, id DESC
+        LIMIT @PageSize + 1;";
+
+        var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(sql, new
+        {
+            ArticleId = articleId,
+            CursorCreatedAt = cursorCreatedAt,
+            CursorId = cursorId ?? long.MaxValue,
+            PageSize = pageSize
+        });
+
+        return comments;
+    }
+
     public async Task<ArticleComment?> GetCommentById(long commentId)
     {
         var comment = await DatabaseHandler.Connection.QueryFirstOrDefaultAsync<ArticleComment?>(@$"
@@ -147,6 +169,7 @@ public interface IArticleCommentRepository
     Task<long> Insert(long articleId, long userId, string content);
     Task Delete(long commentId);
     Task<IEnumerable<ArticleComment?>> GetCommentsByArticleId(long articleId);
+    Task<IEnumerable<ArticleComment?>> GetCommentsByArticleIdPaginated(long articleId, int pageSize, DateTime? cursorCreatedAt, long? cursorId);
     Task<ArticleComment?> GetCommentById(long commentId);
     Task<bool> IsLikedByUser(long commentId, long userId);
     Task<long> GetLikesById(long commentId);

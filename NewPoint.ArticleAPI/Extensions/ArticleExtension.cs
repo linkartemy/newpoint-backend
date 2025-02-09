@@ -27,11 +27,4 @@ public static class ArticleExtension
             CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(article.CreationTimestamp)
         };
     }
-
-    public static NullableArticle ToNullableArticle(this ArticleModel data)
-    {
-        return data is null
-            ? new NullableArticle { Null = new NullValue() }
-            : new NullableArticle { Data = data };
-    }
 }

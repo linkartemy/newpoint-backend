@@ -44,27 +44,21 @@ public class ArticleRepository : IArticleRepository
         return reader;
     }
 
-    public async Task<IEnumerable<Article>> GetArticlesFromId(long id)
+    public async Task<IEnumerable<Article>> GetArticlesPaginated(int pageSize, DateTime? cursorCreatedAt, long? cursorId)
     {
-        var reader = await DatabaseHandler.Connection.QueryAsync<Article>(@$"
-        SELECT 
-            id AS Id,
-            author_id AS AuthorId,
-            title AS Title,
-            content AS Content,
-            images AS Images,
-            likes AS Likes,
-            shares AS Shares,
-            comments AS Comments,
-            views AS Views,
-            creation_timestamp as CreationTimestamp
-        FROM {TableName}
-        WHERE id <= @id
-        ORDER BY id DESC
-        LIMIT 10;
-        ",
-            new { id });
-        return reader;
+        var sql = @$"
+        SELECT * FROM {TableName}
+        WHERE (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+               (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+        ORDER BY creation_timestamp DESC, id DESC
+        LIMIT @PageSize + 1;";
+
+        return await DatabaseHandler.Connection.QueryAsync<Article>(sql, new
+        {
+            CursorCreatedAt = cursorCreatedAt,
+            CursorId = cursorId ?? long.MaxValue,
+            PageSize = pageSize
+        });
     }
 
     public async Task<IEnumerable<Article>> GetArticlesByAuthorId(long authorId)
@@ -87,6 +81,26 @@ public class ArticleRepository : IArticleRepository
             new { authorId });
         return reader;
     }
+
+    public async Task<IEnumerable<Article>> GetArticlesByUserIdPaginated(long userId, int pageSize, DateTime? cursorCreatedAt, long? cursorId)
+    {
+        var sql = @$"
+            SELECT * FROM {TableName}
+            WHERE author_id = @UserId
+            AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+                (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+            ORDER BY creation_timestamp DESC, id DESC
+            LIMIT @PageSize + 1;";
+
+        return await DatabaseHandler.Connection.QueryAsync<Article>(sql, new
+        {
+            UserId = userId,
+            CursorCreatedAt = cursorCreatedAt,
+            CursorId = cursorId ?? long.MaxValue,
+            PageSize = pageSize
+        });
+    }
+
 
     public async Task<long> GetMaxId()
     {
@@ -278,8 +292,9 @@ public interface IArticleRepository
 {
     Task<long> AddArticle(long authorId, string title, string content);
     Task<IEnumerable<Article>> GetArticles();
+    Task<IEnumerable<Article>> GetArticlesPaginated(int pageSize, DateTime? cursorCreatedAt, long? cursorId);
     Task<IEnumerable<Article>> GetArticlesByAuthorId(long authorId);
-    Task<IEnumerable<Article>> GetArticlesFromId(long id);
+    Task<IEnumerable<Article>> GetArticlesByUserIdPaginated(long userId, int pageSize, DateTime? cursorCreatedAt, long? cursorId);
     Task<long> GetMaxId();
     Task<Article> GetArticle(long articleId);
     Task<bool> IsLikedByUser(long articleId, long userId);

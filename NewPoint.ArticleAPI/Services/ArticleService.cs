@@ -53,34 +53,63 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
 
     public override async Task<GetArticlesResponse> GetArticles(GetArticlesRequest request, ServerCallContext context)
     {
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+        var cursorCreatedAt = request.CursorCreatedAt?.ToDateTime();
+        var cursorId = request.CursorId > 0 ? request.CursorId : (long?)null;
         try
         {
-            var articles = (await _articleRepository.GetArticles()).OrderByDescending(article => article.CreationTimestamp).Select(
-                async article =>
+            var articles = (await _articleRepository.GetArticlesPaginated(pageSize, cursorCreatedAt, cursorId)).ToList();
+
+            var hasMore = articles.Count > pageSize;
+            var paginatedArticles = articles.Take(pageSize).ToList();
+
+            var articlesResponse = new List<ArticleModel>();
+            foreach (var article in paginatedArticles)
+            {
+                var author = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken()) ?? new User
                 {
-                    var user = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken());
-                    if (user is null)
-                    {
-                        article.Login = "Unknown";
-                        article.Name = "Unknown";
-                        article.Surname = "";
-                    }
-                    else
-                    {
-                        article.Login = user.Login;
-                        article.Name = user.Name;
-                        article.Surname = user.Surname;
-                        article.ProfileImageId = user.ProfileImageId;
-                    }
+                    Login = "Unknown",
+                    Name = "Unknown",
+                    Surname = "",
+                    ProfileImageId = 0
+                };
 
-                    var userByToken = context.RetrieveUser();
-                    article.Liked =
-                        await _articleRepository.IsLikedByUser(article.Id, userByToken.Id);
+                var userByToken = context.RetrieveUser();
+                article.Liked = await _articleRepository.IsLikedByUser(article.Id, userByToken.Id);
+                // TODO: Implement bookmarking
+                // article.Bookmarked = await _articleRepository.IsBookmarkedByUser(article.Id, userByToken.Id);
 
-                    return article.ToArticleModel();
-                }).Select(article => article.Result).ToList();
+                articlesResponse.Add(new ArticleModel
+                {
+                    Id = article.Id,
+                    AuthorId = article.AuthorId,
+                    Login = author.Login,
+                    Name = author.Name,
+                    Surname = author.Surname,
+                    ProfileImageId = author.ProfileImageId,
+                    Title = article.Title,
+                    Content = article.Content,
+                    Images = article.Images,
+                    Likes = article.Likes,
+                    Shares = article.Shares,
+                    Comments = article.Comments,
+                    Views = article.Views,
+                    Liked = article.Liked,
+                    // Bookmarked = article.Bookmarked, TODO: Implement bookmarking
+                    CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(article.CreationTimestamp)
+                });
+            }
 
-            return new GetArticlesResponse { Articles = { articles } };
+            var nextCursorCreatedAt = hasMore ? paginatedArticles.Last().CreationTimestamp : (DateTime?)null;
+            var nextCursorId = hasMore ? paginatedArticles.Last().Id : 0;
+
+            return new GetArticlesResponse
+            {
+                Articles = { articlesResponse },
+                NextCursorCreatedAt = nextCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextCursorCreatedAt.Value) : null,
+                NextCursorId = nextCursorId,
+                HasMore = hasMore
+            };
         }
         catch (Exception)
         {
@@ -91,44 +120,70 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
 
     public override async Task<GetArticlesByUserIdResponse> GetArticlesByUserId(GetArticlesByUserIdRequest request, ServerCallContext context)
     {
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+        var cursorCreatedAt = request.CursorCreatedAt?.ToDateTime();
+        var cursorId = request.CursorId > 0 ? request.CursorId : (long?)null;
+
         try
         {
-            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken());
-            if (user is null)
+            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken()) ?? new User
             {
-                user = new User
+                Login = "Unknown",
+                Name = "Unknown",
+                Surname = "",
+                ProfileImageId = 0
+            };
+
+            var articles = (await _articleRepository.GetArticlesByUserIdPaginated(request.UserId, pageSize, cursorCreatedAt, cursorId)).ToList();
+
+            var hasMore = articles.Count > pageSize;
+            var paginatedArticles = articles.Take(pageSize).ToList();
+
+            var articlesResponse = new List<ArticleModel>();
+
+            foreach (var article in paginatedArticles)
+            {
+                article.Login = user.Login;
+                article.Name = user.Name;
+                article.Surname = user.Surname;
+                article.ProfileImageId = user.ProfileImageId;
+
+                var userByToken = context.RetrieveUser();
+                article.Liked = await _articleRepository.IsLikedByUser(article.Id, userByToken.Id);
+                // TODO: Implement bookmarking
+                // article.Bookmarked = await _articleRepository.IsBookmarkedByUser(article.Id, userByToken.Id);
+
+                articlesResponse.Add(new ArticleModel
                 {
-                    Login = "Unknown",
-                    Name = "Unknown",
-                    Surname = ""
-                };
+                    Id = article.Id,
+                    AuthorId = article.AuthorId,
+                    Login = article.Login,
+                    Name = article.Name,
+                    Surname = article.Surname,
+                    ProfileImageId = article.ProfileImageId,
+                    Title = article.Title,
+                    Content = article.Content,
+                    Images = article.Images,
+                    Likes = article.Likes,
+                    Shares = article.Shares,
+                    Comments = article.Comments,
+                    Views = article.Views,
+                    Liked = article.Liked,
+                    // Bookmarked = article.Bookmarked, TODO: Implement bookmarking
+                    CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(article.CreationTimestamp)
+                });
             }
 
-            var lastArticleId = request.LastArticleId;
-            if (lastArticleId == -1)
+            var nextCursorCreatedAt = hasMore ? paginatedArticles.Last().CreationTimestamp : (DateTime?)null;
+            var nextCursorId = hasMore ? paginatedArticles.Last().Id : 0;
+
+            return new GetArticlesByUserIdResponse
             {
-                lastArticleId = await _articleRepository.GetMaxId();
-            }
-
-            var articles = (await _articleRepository.GetArticlesFromId(lastArticleId))
-            .Where(article => article.AuthorId == request.UserId)
-            .OrderByDescending(article => article.CreationTimestamp)
-            .Select(
-                async article =>
-                {
-                    article.Login = user.Login;
-                    article.Name = user.Name;
-                    article.Surname = user.Surname;
-                    article.ProfileImageId = user.ProfileImageId;
-
-                    article.Liked =
-                        await _articleRepository.IsLikedByUser(article.Id,
-                            context.RetrieveUser().Id);
-
-                    return article.ToArticleModel();
-                }).Select(article => article.Result).ToList();
-
-            return new GetArticlesByUserIdResponse { Articles = { articles } };
+                Articles = { articlesResponse },
+                NextCursorCreatedAt = nextCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextCursorCreatedAt.Value) : null,
+                NextCursorId = nextCursorId,
+                HasMore = hasMore
+            };
         }
         catch (Exception)
         {
