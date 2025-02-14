@@ -60,33 +60,63 @@ public class UserService : GrpcUser.GrpcUserBase
         var login = request.Login.Trim();
         var password = request.Password.Trim();
 
-        var usersWithLogin = await _userRepository.CountByLogin(login);
-        var usersWithEmail = await _userRepository.CountByEmail(login);
+        int usersWithLogin;
+        int usersWithEmail;
+        try
+        {
+            usersWithLogin = await _userRepository.CountByLogin(login);
+            usersWithEmail = await _userRepository.CountByEmail(login);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error while counting users by login or email");
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
+        }
 
         if (usersWithLogin is 0 && usersWithEmail is 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword),
-            message: UserServiceErrorMessages.WrongLoginOrPassword);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword,
+            UserServiceErrorMessages.WrongLoginOrPassword);
         }
 
         User user;
-        if (usersWithLogin is not 0)
+        try
         {
-            user = await _userRepository.GetUserByLogin(login);
+            if (usersWithLogin is not 0)
+            {
+                user = await _userRepository.GetUserByLogin(login);
+            }
+            else
+            {
+                user = await _userRepository.GetUserByEmail(login);
+            }
         }
-        else
+        catch (Exception e)
         {
-            user = await _userRepository.GetUserByEmail(login);
+            _logger.LogError(e, "Error while getting user by login or email");
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
         user.HashedPassword = await _userRepository.GetUserHashedPassword(user.Login);
 
         if (AuthenticationHandler.VerifyPassword(user, password) is false)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword),
-            message: UserServiceErrorMessages.WrongLoginOrPassword);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword,
+            UserServiceErrorMessages.WrongLoginOrPassword);
         }
 
-        var token = await _userRepository.GetTokenById(user.Id);
+        string token;
+        try
+        {
+            token = await _userRepository.GetTokenById(user.Id);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error while getting token by id");
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
+        }
 
         if (AuthenticationHandler.IsTokenExpired(token))
         {
@@ -94,7 +124,7 @@ public class UserService : GrpcUser.GrpcUserBase
             await _userRepository.UpdateToken(user.Id, token);
         }
 
-        context.GetHttpContext().Response.Headers.Add("Authorization", token);
+        context.GetHttpContext().Response.Headers.Append("Authorization", token);
 
         return new LoginResponse
         {
@@ -108,28 +138,28 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (login.Length < 4)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameMustBeAtLeastFourSymbols),
-            message: UserServiceErrorMessages.UsernameMustBeAtLeastFourSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameMustBeAtLeastFourSymbols,
+            UserServiceErrorMessages.UsernameMustBeAtLeastFourSymbols);
         }
 
         if (login.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
         }
 
         var password = request.Password.Trim();
 
         if (password.Length < 8)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols),
-            message: UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols,
+            UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
         }
 
         if (password.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
         }
 
         var hasNumber = new Regex(@"[0-9]+");
@@ -137,20 +167,20 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (!hasNumber.IsMatch(password))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit),
-            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit,
+            UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
         }
 
         if (!hasUpperChar.IsMatch(password))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter),
-            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter,
+            UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
         }
 
         if (password.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
         }
 
         var email = request.Email.Trim();
@@ -158,8 +188,8 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (email.Length == 0 && phone.Length == 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.EmailOrPhoneMustBeProvided),
-            message: UserServiceErrorMessages.EmailOrPhoneMustBeProvided);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.EmailOrPhoneMustBeProvided,
+            UserServiceErrorMessages.EmailOrPhoneMustBeProvided);
         }
 
         if (DateTimeHandler.TryTimestampToDateTime(request.BirthDate, out var date) is false) date = DateTime.Today;
@@ -181,14 +211,14 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (await _userRepository.CountByLogin(login) != 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisNameAlreadyExists),
-            message: UserServiceErrorMessages.UserWithThisNameAlreadyExists);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisNameAlreadyExists,
+            UserServiceErrorMessages.UserWithThisNameAlreadyExists);
         }
 
         if (await _userRepository.CountByEmail(email) != 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists),
-            message: UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists,
+            UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
         }
 
         AuthenticationHandler.AssignPasswordHash(user, password);
@@ -197,7 +227,7 @@ public class UserService : GrpcUser.GrpcUserBase
 
         await _userRepository.InsertUser(user, token);
 
-        context.GetHttpContext().Response.Headers.Add("Authorization", token);
+        context.GetHttpContext().Response.Headers.Append("Authorization", token);
 
         return new RegisterResponse
         {
@@ -217,33 +247,34 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
     public override async Task<GetProfileByIdResponse> GetProfileById(GetProfileByIdRequest request, ServerCallContext context)
     {
+        User? user;
         try
         {
-            var user = await _userRepository.GetProfileById(request.Id);
-
-            if (user is null)
-            {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
-                message: UserServiceErrorMessages.UserDoesntExist);
-            }
-
-            return new GetProfileByIdResponse
-            {
-                User = user.ToUserModel()
-            };
+            user = await _userRepository.GetProfileById(request.Id);
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
+
+        if (user is null)
+        {
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist,
+            UserServiceErrorMessages.UserDoesntExist);
+        }
+
+        return new GetProfileByIdResponse
+        {
+            User = user.ToUserModel()
+        };
     }
 
     public override async Task<ValidateUserResponse> ValidateUser(ValidateUserRequest request, ServerCallContext context)
@@ -252,28 +283,28 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (login.Length < 4)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameMustBeAtLeastFourSymbols),
-            message: UserServiceErrorMessages.UsernameMustBeAtLeastFourSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameMustBeAtLeastFourSymbols,
+            UserServiceErrorMessages.UsernameMustBeAtLeastFourSymbols);
         }
 
         if (login.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
         }
 
         var password = request.Password.Trim();
 
         if (password.Length < 8)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols),
-            message: UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols,
+            UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
         }
 
         if (password.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
         }
 
         var hasNumber = new Regex(@"[0-9]+");
@@ -281,20 +312,20 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (!hasNumber.IsMatch(password))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit),
-            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit,
+            UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
         }
 
         if (!hasUpperChar.IsMatch(password))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter),
-            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter,
+            UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
         }
 
         if (password.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
         }
 
         var email = request.Email.Trim();
@@ -302,20 +333,20 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (email.Length == 0 && phone.Length == 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.EmailOrPhoneMustBeProvided),
-            message: UserServiceErrorMessages.EmailOrPhoneMustBeProvided);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.EmailOrPhoneMustBeProvided,
+            UserServiceErrorMessages.EmailOrPhoneMustBeProvided);
         }
 
         if (await _userRepository.CountByLogin(login) != 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisNameAlreadyExists),
-            message: UserServiceErrorMessages.UserWithThisNameAlreadyExists);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisNameAlreadyExists,
+            UserServiceErrorMessages.UserWithThisNameAlreadyExists);
         }
 
         if (await _userRepository.CountByEmail(email) != 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists),
-            message: UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists,
+            UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
         }
 
         return new ValidateUserResponse
@@ -334,22 +365,22 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (description.Length > 255)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
         }
 
         if (birthDate == null)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UsernameLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.UsernameLengthCantBeOverThirtyTwoSymbols);
         }
 
         var user = context.RetrieveUser();
 
         if (user is null)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
-            message: UserServiceErrorMessages.UserDoesntExist);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist,
+            UserServiceErrorMessages.UserDoesntExist);
         }
 
         user.Name = name;
@@ -428,13 +459,13 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (user is null)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
-            message: UserServiceErrorMessages.UserDoesntExist);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist,
+            UserServiceErrorMessages.UserDoesntExist);
         }
         if (await _userRepository.CountByEmail(email) != 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists),
-            message: UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserWithThisEmailAlreadyExists,
+            UserServiceErrorMessages.UserWithThisEmailAlreadyExists);
         }
 
         try
@@ -448,8 +479,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -464,14 +495,14 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (newPassword.Length < 8)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols),
-            message: UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthMustBeAtLeastEightSymbols,
+            UserServiceErrorMessages.PasswordLengthMustBeAtLeastEightSymbols);
         }
 
         if (newPassword.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
         }
 
         var hasNumber = new Regex(@"[0-9]+");
@@ -479,28 +510,28 @@ public class UserService : GrpcUser.GrpcUserBase
 
         if (!hasNumber.IsMatch(newPassword))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit),
-            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneDigit,
+            UserServiceErrorMessages.PasswordMustContainAtLeastOneDigit);
         }
 
         if (!hasUpperChar.IsMatch(newPassword))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter),
-            message: UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordMustContainAtLeastOneCapitalLetter,
+            UserServiceErrorMessages.PasswordMustContainAtLeastOneCapitalLetter);
         }
 
         if (newPassword.Length > 32)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols),
-            message: UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.PasswordLengthCantBeOverThirtyTwoSymbols,
+            UserServiceErrorMessages.PasswordLengthCantBeOverThirtyTwoSymbols);
         }
 
         user.HashedPassword = await _userRepository.GetUserHashedPasswordById(user.Id);
 
         if (AuthenticationHandler.VerifyPassword(user, currentPassword) is false)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword),
-            message: UserServiceErrorMessages.WrongLoginOrPassword);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.WrongLoginOrPassword,
+            UserServiceErrorMessages.WrongLoginOrPassword);
         }
         try
         {
@@ -516,8 +547,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -536,8 +567,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -548,8 +579,8 @@ public class UserService : GrpcUser.GrpcUserBase
         var user = context.RetrieveUser();
         if (await _userRepository.CountWithId(userId) is 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
-            message: UserServiceErrorMessages.UserDoesntExist);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist,
+            UserServiceErrorMessages.UserDoesntExist);
         }
         try
         {
@@ -580,8 +611,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -592,8 +623,8 @@ public class UserService : GrpcUser.GrpcUserBase
         var user = context.RetrieveUser();
         if (await _userRepository.CountWithId(userId) is 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist),
-            message: UserServiceErrorMessages.UserDoesntExist);
+            throw ExceptionHandler.CreateRpcException(StatusCode.InvalidArgument, UserServiceErrorCodes.UserDoesntExist,
+            UserServiceErrorMessages.UserDoesntExist);
         }
 
         try
@@ -606,8 +637,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -625,10 +656,11 @@ public class UserService : GrpcUser.GrpcUserBase
                 Enabled = twoFactor
             };
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            _logger.LogError("Error while getting two factor by token: " + e.Message);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -646,8 +678,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -664,8 +696,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 
@@ -681,8 +713,8 @@ public class UserService : GrpcUser.GrpcUserBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, UserServiceErrorCodes.GenericError),
-            message: UserServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(StatusCode.Internal, UserServiceErrorCodes.GenericError,
+            UserServiceErrorMessages.GenericError);
         }
     }
 }

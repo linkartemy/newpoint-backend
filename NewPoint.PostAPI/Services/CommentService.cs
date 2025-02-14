@@ -12,15 +12,11 @@ public class CommentService : GrpcComment.GrpcCommentBase
     public static class CommentServiceErrorMessages
     {
         public const string GenericError = "Something went wrong. Please try again later. We are sorry";
-        public const string CommentNotFound = "Comment not found";
-        public const string Unauthorized = "User is not authorized to perform this action";
     }
 
     public static class CommentServiceErrorCodes
     {
         public const string GenericError = "generic_error";
-        public const string CommentNotFound = "comment_not_found";
-        public const string Unauthorized = "unauthorized";
     }
 
     private readonly ICommentRepository _commentRepository;

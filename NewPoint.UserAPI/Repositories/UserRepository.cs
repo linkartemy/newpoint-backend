@@ -317,29 +317,29 @@ internal class UserRepository : IUserRepository
 
     public async Task<bool> GetTwoFactorById(long id)
     {
-        var twoFactor = await DatabaseHandler.Connection.QueryFirstAsync<bool>(@$"
+        var twoFactorEnabled = await DatabaseHandler.Connection.QueryFirstAsync<bool>(@$"
         SELECT
-            two_factor
+            two_factor_enabled
         FROM {TableName}
         WHERE id=@id;
         ",
             new { id });
 
-        return twoFactor;
+        return twoFactorEnabled;
     }
 
-    public async Task UpdateTwoFactorById(long id, bool twoFactor)
+    public async Task UpdateTwoFactorById(long id, bool twoFactorEnabled)
     {
         await DatabaseHandler.Connection.ExecuteAsync(@$"
         UPDATE
             {TableName}
-        SET two_factor=@twoFactor
+        SET two_factor_enabled=@twoFactorEnabled
         WHERE id=@id;
         ",
             new
             {
                 id,
-                twoFactor
+                twoFactorEnabled
             });
     }
 }
@@ -370,5 +370,5 @@ public interface IUserRepository
     public Task<int> GetFollowersByUserId(long userId);
     public Task UpdateFollowersByUserId(long userId, int followers);
     public Task<bool> GetTwoFactorById(long id);
-    public Task UpdateTwoFactorById(long id, bool twoFactor);
+    public Task UpdateTwoFactorById(long id, bool twoFactorEnabled);
 }

@@ -1,18 +1,11 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.OpenApi.Models;
-using Minio;
 using NewPoint.Common.Configurations;
-using NewPoint.Common.Handlers;
 using NewPoint.FeedAPI.Services;
 using NewPoint.FeedAPI.Middleware;
 using NewPoint.FeedAPI.Clients;
 using Newtonsoft.Json.Converters;
 using Swashbuckle.AspNetCore.Filters;
-using NewPoint.ArticleAPI.Repositories;
-using NewPoint.PostAPI.Repositories;
 
 namespace NewPoint.FeedAPI;
 
@@ -52,9 +45,9 @@ public class Startup
                 });
         });
 
-        services.AddSingleton<IArticleRepository, ArticleRepository>();
-        services.AddSingleton<IPostRepository, PostRepository>();
         services.AddTransient<IUserClient, UserClient>();
+        services.AddTransient<IArticleClient, ArticleClient>();
+        services.AddTransient<IPostClient, PostClient>();
         services.AddEndpointsApiExplorer();
 
         services.AddSwaggerGen(options =>

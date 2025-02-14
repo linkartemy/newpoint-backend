@@ -14,17 +14,12 @@ public class PostService : GrpcPost.GrpcPostBase
     public static class PostServiceErrorMessages
     {
         public const string GenericError = "Something went wrong. Please try again later. We are sorry";
-        public const string PostNotFound = "Post not found";
-        public const string Unauthorized = "User is not authorized to perform this action";
     }
 
     public static class PostServiceErrorCodes
     {
         public const string GenericError = "generic_error";
-        public const string PostNotFound = "post_not_found";
-        public const string Unauthorized = "unauthorized";
     }
-
 
     private readonly ILogger<PostService> _logger;
     private readonly IPostRepository _postRepository;
@@ -50,8 +45,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -73,13 +68,7 @@ public class PostService : GrpcPost.GrpcPostBase
             var postsResponse = new List<PostModel>();
             foreach (var post in paginatedPosts)
             {
-                var postAuthor = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken()) ?? new User
-                {
-                    Login = "Unknown",
-                    Name = "Unknown",
-                    Surname = "",
-                    ProfileImageId = 0
-                };
+                var postAuthor = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken()) ?? new User();
 
                 var user = context.RetrieveUser();
                 post.Liked = await _postRepository.IsLikedByUser(post.Id, user.Id);
@@ -119,8 +108,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -134,13 +123,7 @@ public class PostService : GrpcPost.GrpcPostBase
 
         try
         {
-            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken()) ?? new User
-            {
-                Login = "Unknown", // TODO: Implement user not found handling
-                Name = "Unknown",
-                Surname = "",
-                ProfileImageId = 0
-            };
+            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken()) ?? new User();
 
             var posts = (await _postRepository.GetPaginatedPostsByUserId(request.UserId, pageSize, cursorCreatedAt, cursorId)).ToList();
 
@@ -193,8 +176,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -206,29 +189,19 @@ public class PostService : GrpcPost.GrpcPostBase
         {
             var post = await _postRepository.GetPost(request.Id);
 
-            var user = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken());
-            if (user is null)
-            {
-                post.Login = "Unknown";
-                post.Name = "Unknown";
-                post.Surname = "";
-            }
-            else
-            {
-                post.Login = user.Login;
-                post.Name = user.Name;
-                post.Surname = user.Surname;
-                post.ProfileImageId = user.ProfileImageId;
-            }
-
+            var user = await _userClient.GetPostUserDataById(post.AuthorId, context.RetrieveToken()) ?? new User();
+            post.Login = user.Login;
+            post.Name = user.Name;
+            post.Surname = user.Surname;
+            post.ProfileImageId = user.ProfileImageId;
             post.Liked = await _postRepository.IsLikedByUser(post.Id, context.RetrieveUser().Id);
 
             return new GetPostByIdResponse { Post = post.ToPostModel() };
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -250,8 +223,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -273,8 +246,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -294,8 +267,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -317,8 +290,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -346,8 +319,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }
@@ -366,8 +339,8 @@ public class PostService : GrpcPost.GrpcPostBase
         }
         catch (Exception)
         {
-            throw new RpcException(
-                new Status(StatusCode.Internal, PostServiceErrorCodes.GenericError),
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: PostServiceErrorCodes.GenericError,
                 message: PostServiceErrorMessages.GenericError
             );
         }

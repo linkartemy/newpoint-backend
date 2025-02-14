@@ -1,13 +1,7 @@
-using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using NewPoint.Common.Extensions;
-using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
-using NewPoint.PostAPI.Repositories;
-using NewPoint.ArticleAPI.Repositories;
 using NewPoint.FeedAPI.Clients;
-using NewPoint.ArticleAPI.Extensions;
-using NewPoint.PostAPI.Extensions;
 
 public static class FeedServiceErrorMessages
 {
@@ -24,19 +18,19 @@ namespace NewPoint.FeedAPI.Services
     public class FeedService : GrpcFeed.GrpcFeedBase
     {
         private readonly ILogger<FeedService> _logger;
-        private readonly IArticleRepository _articleRepository;
-        private readonly IPostRepository _postRepository;
+        private readonly IArticleClient _articleClient;
+        private readonly IPostClient _postClient;
         private readonly IUserClient _userClient;
 
         public FeedService(
+            IArticleClient articleClient,
+            IPostClient postClient,
             IUserClient userClient,
-            IArticleRepository articleRepository,
-            IPostRepository postRepository,
             ILogger<FeedService> logger)
         {
             _userClient = userClient;
-            _articleRepository = articleRepository;
-            _postRepository = postRepository;
+            _articleClient = articleClient;
+            _postClient = postClient;
             _logger = logger;
         }
 
@@ -45,6 +39,7 @@ namespace NewPoint.FeedAPI.Services
             try
             {
                 var user = context.RetrieveUser();
+                var token = context.RetrieveToken();
 
                 var articlePageSize = request.ArticlePagination?.PageSize ?? 10;
                 var articleCursorCreatedAt = request.ArticlePagination?.CursorCreatedAt?.ToDateTime();
@@ -56,13 +51,14 @@ namespace NewPoint.FeedAPI.Services
 
                 var feedElements = new List<FeedElement>();
 
-                var articles = (await _articleRepository.GetArticlesPaginated(articlePageSize, articleCursorCreatedAt, articleCursorId)).ToList();
+                var getArticlesResponse = await _articleClient.GetArticles(token, articlePageSize, articleCursorCreatedAt, articleCursorId);
+                var articles = getArticlesResponse.Articles.ToList();
                 var hasMoreArticles = articles.Count > articlePageSize;
                 var paginatedArticles = articles.Take(articlePageSize).ToList();
 
                 foreach (var article in paginatedArticles)
                 {
-                    var author = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken()) ?? new User
+                    var author = await _userClient.GetPostUserDataById(article.AuthorId, token) ?? new User
                     {
                         Login = "Unknown",
                         Name = "Unknown",
@@ -70,7 +66,7 @@ namespace NewPoint.FeedAPI.Services
                         ProfileImageId = 0
                     };
 
-                    article.Liked = await _articleRepository.IsLikedByUser(article.Id, user.Id);
+                    article.Liked = (await _articleClient.IsArticleLikedByUser(token, user.Id, article.Id)).Liked;
 
                     feedElements.Add(new FeedElement
                     {
@@ -91,12 +87,13 @@ namespace NewPoint.FeedAPI.Services
                             Views = article.Views,
                             Liked = article.Liked,
                             Bookmarked = false, // Implement if needed
-                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(article.CreationTimestamp)
+                            CreationTimestamp = article.CreationTimestamp
                         }
                     });
                 }
 
-                var posts = (await _postRepository.GetPaginatedPosts(postPageSize, postCursorCreatedAt, postCursorId)).ToList();
+                var getPostsResponse = await _postClient.GetPosts(token, postPageSize, postCursorCreatedAt, postCursorId);
+                var posts = getPostsResponse.Posts.ToList();
                 var hasMorePosts = posts.Count > postPageSize;
                 var paginatedPosts = posts.Take(postPageSize).ToList();
 
@@ -110,7 +107,7 @@ namespace NewPoint.FeedAPI.Services
                         ProfileImageId = 0
                     };
 
-                    post.Liked = await _postRepository.IsLikedByUser(post.Id, user.Id);
+                    post.Liked = (await _postClient.IsPostLikedByUser(token, user.Id, post.Id)).Liked;
 
                     feedElements.Add(new FeedElement
                     {
@@ -130,7 +127,7 @@ namespace NewPoint.FeedAPI.Services
                             Views = post.Views,
                             Liked = post.Liked,
                             Bookmarked = false, // Implement if needed
-                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(post.CreationTimestamp)
+                            CreationTimestamp = post.CreationTimestamp
                         }
                     });
                 }
@@ -139,10 +136,10 @@ namespace NewPoint.FeedAPI.Services
                     ? f.Post.CreationTimestamp.Seconds
                     : f.Article.CreationTimestamp.Seconds).ToList();
 
-                var nextArticleCursorCreatedAt = hasMoreArticles ? paginatedArticles.Last().CreationTimestamp : (DateTime?)null;
+                var nextArticleCursorCreatedAt = getArticlesResponse.HasMore ? paginatedArticles.Last().CreationTimestamp : null;
                 var nextArticleCursorId = hasMoreArticles ? paginatedArticles.Last().Id : 0;
 
-                var nextPostCursorCreatedAt = hasMorePosts ? paginatedPosts.Last().CreationTimestamp : (DateTime?)null;
+                var nextPostCursorCreatedAt = hasMorePosts ? paginatedPosts.Last().CreationTimestamp : null;
                 var nextPostCursorId = hasMorePosts ? paginatedPosts.Last().Id : 0;
 
                 return new GetFeedByUserIdResponse
@@ -150,13 +147,13 @@ namespace NewPoint.FeedAPI.Services
                     Feed = { feedElements },
                     ArticleNextPagination = new FeedNextPagination
                     {
-                        NextCursorCreatedAt = nextArticleCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextArticleCursorCreatedAt.Value) : null,
+                        NextCursorCreatedAt = nextArticleCursorCreatedAt,
                         NextCursorId = nextArticleCursorId,
                         HasMore = hasMoreArticles
                     },
                     PostNextPagination = new FeedNextPagination
                     {
-                        NextCursorCreatedAt = nextPostCursorCreatedAt != null ? DateTimeHandler.DateTimeToTimestamp(nextPostCursorCreatedAt.Value) : null,
+                        NextCursorCreatedAt = nextPostCursorCreatedAt,
                         NextCursorId = nextPostCursorId,
                         HasMore = hasMorePosts
                     }

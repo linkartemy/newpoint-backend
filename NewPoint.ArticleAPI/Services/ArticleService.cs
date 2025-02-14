@@ -46,8 +46,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -66,13 +68,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
             var articlesResponse = new List<ArticleModel>();
             foreach (var article in paginatedArticles)
             {
-                var author = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken()) ?? new User
-                {
-                    Login = "Unknown",
-                    Name = "Unknown",
-                    Surname = "",
-                    ProfileImageId = 0
-                };
+                var author = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken()) ?? new User();
 
                 var userByToken = context.RetrieveUser();
                 article.Liked = await _articleRepository.IsLikedByUser(article.Id, userByToken.Id);
@@ -113,8 +109,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -126,13 +124,7 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
 
         try
         {
-            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken()) ?? new User
-            {
-                Login = "Unknown",
-                Name = "Unknown",
-                Surname = "",
-                ProfileImageId = 0
-            };
+            var user = await _userClient.GetPostUserDataById(request.UserId, context.RetrieveToken()) ?? new User();
 
             var articles = (await _articleRepository.GetArticlesByUserIdPaginated(request.UserId, pageSize, cursorCreatedAt, cursorId)).ToList();
 
@@ -187,8 +179,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -198,29 +192,21 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         {
             var article = await _articleRepository.GetArticle(request.Id);
 
-            var user = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken());
-            if (user is null)
-            {
-                article.Login = "Unknown";
-                article.Name = "Unknown";
-                article.Surname = "";
-            }
-            else
-            {
-                article.Login = user.Login;
-                article.Name = user.Name;
-                article.Surname = user.Surname;
-                article.ProfileImageId = user.ProfileImageId;
-            }
-
+            var user = await _userClient.GetPostUserDataById(article.AuthorId, context.RetrieveToken()) ?? new User();
+            article.Login = user.Login;
+            article.Name = user.Name;
+            article.Surname = user.Surname;
+            article.ProfileImageId = user.ProfileImageId;
             article.Liked = await _articleRepository.IsLikedByUser(article.Id, context.RetrieveUser().Id);
 
             return new GetArticleByIdResponse { Article = article.ToArticleModel() };
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -240,8 +226,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -261,8 +249,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -280,8 +270,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -301,8 +293,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -328,8 +322,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 
@@ -344,8 +340,10 @@ public class ArticleService : GrpcArticle.GrpcArticleBase
         }
         catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Internal, ArticleServiceErrorCodes.GenericError),
-            message: ArticleServiceErrorMessages.GenericError);
+            throw ExceptionHandler.CreateRpcException(
+                statusCode: StatusCode.Internal, errorCode: ArticleServiceErrorCodes.GenericError,
+                message: ArticleServiceErrorMessages.GenericError
+            );
         }
     }
 }

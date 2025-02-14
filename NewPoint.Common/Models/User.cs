@@ -6,11 +6,11 @@ public class User
 {
     [JsonProperty("id")] public long Id { get; set; }
 
-    [JsonProperty("login")] public string Login { get; set; } = string.Empty;
+    [JsonProperty("login")] public string Login { get; set; } = "Unknown";
 
     [JsonIgnore] public string HashedPassword { get; set; } = string.Empty;
 
-    [JsonProperty("name")] public string Name { get; set; } = string.Empty;
+    [JsonProperty("name")] public string Name { get; set; } = "Unknown";
 
     [JsonProperty("surname")] public string Surname { get; set; } = string.Empty;
 
@@ -22,7 +22,7 @@ public class User
 
     [JsonProperty("phone")] public string? Phone { get; set; }
 
-    [JsonProperty("profileImageId")] public long ProfileImageId { get; set; }
+    [JsonProperty("profileImageId")] public long ProfileImageId { get; set; } = 0;
 
     [JsonProperty("headerImageId")] public long HeaderImageId { get; set; }
 
