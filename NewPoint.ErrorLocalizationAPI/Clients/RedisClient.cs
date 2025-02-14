@@ -17,9 +17,6 @@ namespace NewPoint.ErrorLocalizationAPI.Clients
             _database = _redis.GetDatabase();
         }
 
-        /// <summary>
-        /// Checks if an error localization exists in Redis.
-        /// </summary>
         public async Task<bool> ErrorLocalizationExists(string errorCode, string language)
         {
             try
@@ -33,9 +30,6 @@ namespace NewPoint.ErrorLocalizationAPI.Clients
             }
         }
 
-        /// <summary>
-        /// Retrieves the localized error message from Redis by error code and language.
-        /// </summary>
         public async Task<string> GetErrorLocalization(string errorCode, string language)
         {
             try
@@ -49,9 +43,6 @@ namespace NewPoint.ErrorLocalizationAPI.Clients
             }
         }
 
-        /// <summary>
-        /// Stores an error localization in Redis with an optional expiration time.
-        /// </summary>
         public async Task SaveErrorLocalization(string errorCode, string language, string localizedMessage, TimeSpan? expiry = null)
         {
             try
@@ -65,9 +56,6 @@ namespace NewPoint.ErrorLocalizationAPI.Clients
             }
         }
 
-        /// <summary>
-        /// Deletes a localized error message from Redis.
-        /// </summary>
         public async Task DeleteErrorLocalization(string errorCode, string language)
         {
             try
@@ -80,9 +68,6 @@ namespace NewPoint.ErrorLocalizationAPI.Clients
             }
         }
 
-        /// <summary>
-        /// Retrieves all localizations for a specific error code (for all languages).
-        /// </summary>
         public async Task<Dictionary<string, string>> GetAllLocalizationsForError(string errorCode)
         {
             try
@@ -108,9 +93,6 @@ namespace NewPoint.ErrorLocalizationAPI.Clients
             }
         }
 
-        /// <summary>
-        /// Generates Redis key for an error localization.
-        /// </summary>
         private static string GetErrorLocalizationKey(string errorCode, string language) => $"error:{errorCode}:{language}";
     }
 

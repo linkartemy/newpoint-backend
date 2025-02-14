@@ -1,3 +1,13 @@
 {
-    "USER_NOT_FOUND": "Пользователь не найден"
+    "wrong_login_or_password": "Неверный логин или пароль",
+    "username_must_be_at_least_four_symbols": "Имя пользователя должно содержать не менее 4 символов",
+    "username_length_cant_be_over_thirty_two_symbols": "Длина имени пользователя не может превышать 32 символа",
+    "password_length_must_be_at_least_eight_symbols": "Длина пароля должна быть не менее 8 символов",
+    "password_length_cant_be_over_thirty_two_symbols": "Длина пароля не может превышать 32 символа",
+    "password_must_contain_at_least_one_digit": "Пароль должен содержать хотя бы 1 цифру",
+    "password_must_contain_at_least_one_capital_letter": "Пароль должен содержать хотя бы 1 заглавную букву",
+    "email_or_phone_must_be_provided": "Необходимо указать хотя бы email или номер телефона",
+    "user_with_this_name_already_exists": "Пользователь с таким именем уже существует",
+    "user_with_this_email_already_exists": "Пользователь с таким email уже существует",
+    "user_doesnt_exist": "Пользователь не существует. Ошибка сервера. Пожалуйста, свяжитесь с нами"
 }

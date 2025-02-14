@@ -1,3 +1,13 @@
 {
-    "USER_NOT_FOUND": "User not found"
+    "wrong_login_or_password": "Wrong login or password",
+    "username_must_be_at_least_four_symbols": "Username must be at least 4 symbols",
+    "username_length_cant_be_over_thirty_two_symbols": "Username's length can't be over 32 symbols",
+    "password_length_must_be_at_least_eight_symbols": "Password's length must be at least 8 symbols",
+    "password_length_cant_be_over_thirty_two_symbols": "Password's length can't be over 32 symbols",
+    "password_must_contain_at_least_one_digit": "Password must contain at least 1 digit",
+    "password_must_contain_at_least_one_capital_letter": "Password must contain at least 1 capital letter",
+    "email_or_phone_must_be_provided": "You must provide at least email or phone number",
+    "user_with_this_name_already_exists": "User with this name already exists",
+    "user_with_this_email_already_exists": "User with this email already exists",
+    "user_doesnt_exist": "User doesn't exist. Server error. Please contact with us"
 }

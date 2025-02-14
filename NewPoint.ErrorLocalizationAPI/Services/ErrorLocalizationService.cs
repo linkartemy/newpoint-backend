@@ -31,6 +31,12 @@ public class ErrorLocalizationService : GrpcErrorLocalization.GrpcErrorLocalizat
 
         try
         {
+            if (await _redisClient.ErrorLocalizationExists(request.ErrorCode, request.Language) is false)
+            {
+                _logger.LogInformation($"Localization not found for error: {request.ErrorCode}, language: {request.Language}");
+                throw new RpcException(new Status(StatusCode.NotFound, "Localization wasn't found."));
+            }
+
             var localizedMessage = await _redisClient.GetErrorLocalization(request.ErrorCode, request.Language);
             if (string.IsNullOrEmpty(localizedMessage))
             {

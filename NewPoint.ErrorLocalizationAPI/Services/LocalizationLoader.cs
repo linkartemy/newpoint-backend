@@ -33,10 +33,10 @@ namespace NewPoint.ErrorLocalizationAPI.Services
                     return;
                 }
 
-                var files = Directory.GetFiles(_localizationPath, "errors.*.json");
+                var files = Directory.GetFiles(_localizationPath, "errors.*.json", SearchOption.AllDirectories);
                 foreach (var file in files)
                 {
-                    string language = Path.GetFileNameWithoutExtension(file).Split('.')[1]; // Extract "ru", "en", etc.
+                    string language = Path.GetFileNameWithoutExtension(file).Split('.')[1];
                     _logger.LogInformation($"Processing localization file: {file} (Language: {language})");
 
                     var jsonString = await File.ReadAllTextAsync(file);
