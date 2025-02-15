@@ -89,22 +89,25 @@ public class ArticleRepository : IArticleRepository
 
     public async Task<IEnumerable<Article>> GetArticlesByUserIdPaginated(long userId, int pageSize, DateTime? cursorCreatedAt, long? cursorId)
     {
-        var sql = @$"
-            SELECT * FROM {TableName}
-            WHERE author_id = @UserId
-            AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
-                (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
-            ORDER BY creation_timestamp DESC, id DESC
-            LIMIT @PageSize + 1;";
+        var limit = pageSize + 1;
 
-        return await DatabaseHandler.Connection.QueryAsync<Article>(sql, new
-        {
-            UserId = userId,
-            CursorCreatedAt = cursorCreatedAt,
-            CursorId = cursorId ?? long.MaxValue,
-            PageSize = pageSize
-        });
+        var sql = @$"
+        SELECT * FROM {TableName}
+        WHERE author_id = @UserId
+          AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+               (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+        ORDER BY creation_timestamp DESC, id DESC
+        LIMIT @Limit;";
+
+        var parameters = new DynamicParameters();
+        parameters.Add("UserId", userId, DbType.Int64);
+        parameters.Add("CursorCreatedAt", cursorCreatedAt, DbType.DateTime);
+        parameters.Add("CursorId", cursorId ?? long.MaxValue, DbType.Int64);
+        parameters.Add("Limit", limit, DbType.Int32);
+
+        return await DatabaseHandler.Connection.QueryAsync<Article>(sql, parameters);
     }
+
 
 
     public async Task<long> GetMaxId()

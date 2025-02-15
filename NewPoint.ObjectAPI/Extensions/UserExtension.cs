@@ -23,14 +23,11 @@ public static class UserExtension
             IP = user.HasIp ? user.Ip : null,
             Phone = user.HasPhone ? user.Phone : null,
             LastLoginTimestamp = DateTimeHandler.TimestampToDateTime(
-                user.LastLoginTimestampWrapperCase == UserModel.LastLoginTimestampWrapperOneofCase.LastLoginTimestamp
-                ? user.LastLoginTimestamp : new Timestamp()) ?? DateTime.MinValue,
+                user.LastLoginTimestamp != null ? user.LastLoginTimestamp : new Timestamp()) ?? DateTime.MinValue,
             RegistrationTimestamp = DateTimeHandler.TimestampToDateTime(
-                user.RegistrationTimestampWrapperCase == UserModel.RegistrationTimestampWrapperOneofCase.RegistrationTimestamp
-                ? user.RegistrationTimestamp : new Timestamp()) ?? DateTime.MinValue,
+                user.RegistrationTimestamp != null ? user.RegistrationTimestamp : new Timestamp()) ?? DateTime.MinValue,
             BirthDate = DateTimeHandler.TimestampToDateTime(
-                user.BirthDateWrapperCase == UserModel.BirthDateWrapperOneofCase.BirthDate
-                ? user.BirthDate : new Timestamp()) ?? DateTime.MinValue,
+                user.BirthDate != null ? user.BirthDate : new Timestamp()) ?? DateTime.MinValue,
             Followers = user.Followers,
             Following = user.Following
         };

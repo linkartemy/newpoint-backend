@@ -46,6 +46,18 @@ services:
       - newpoint-article-service-volume:/src/NewPoint.ArticleAPI
     networks:
       - grpc-network
+  
+  newpoint-bookmark-service:
+    build:
+      context: .
+      dockerfile: NewPoint.BookmarkAPI/Dockerfile
+    container_name: bookmark_service_container
+    ports:
+      - "5144:5144"
+    volumes:
+      - newpoint-bookmark-service-volume:/src/NewPoint.BookmarkAPI
+    networks:
+      - grpc-network
 
   newpoint-object-service:
     build:
@@ -112,6 +124,7 @@ services:
       - newpoint-user-service
       - newpoint-post-service
       - newpoint-article-service
+      - newpoint-bookmark-service
       - newpoint-object-service
       - newpoint-feed-service
       - newpoint-verification-service
@@ -128,6 +141,7 @@ volumes:
   newpoint-user-service-volume:
   newpoint-post-service-volume:
   newpoint-article-service-volume:
+  newpoint-bookmark-service-volume:
   newpoint-object-service-volume:
   newpoint-feed-service-volume:
   newpoint-verification-service-volume:

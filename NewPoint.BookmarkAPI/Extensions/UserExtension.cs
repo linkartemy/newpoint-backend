@@ -3,7 +3,7 @@ using NewPoint.Common.Extensions;
 using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
 
-namespace NewPoint.ErrorLocalizationAPI.Extensions;
+namespace NewPoint.BookmarkAPI.Extensions;
 
 public static class UserExtension
 {

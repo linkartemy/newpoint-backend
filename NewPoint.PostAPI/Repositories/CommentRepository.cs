@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
 
@@ -47,6 +48,29 @@ public class CommentRepository : ICommentRepository
             new { postId });
         return comments;
     }
+
+    public async Task<IEnumerable<Comment?>> GetCommentsByPostIdPaginated(long postId, int pageSize, DateTime? cursorCreatedAt, long? cursorId)
+    {
+        var limit = pageSize + 1;
+
+        var sql = @$"
+        SELECT *
+        FROM {TableName}
+        WHERE post_id = @PostId
+        AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
+            (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
+        ORDER BY creation_timestamp DESC, id DESC
+        LIMIT @Limit;";
+
+        var parameters = new DynamicParameters();
+        parameters.Add("PostId", postId, DbType.Int64);
+        parameters.Add("CursorCreatedAt", cursorCreatedAt, DbType.DateTime);
+        parameters.Add("CursorId", cursorId ?? long.MaxValue, DbType.Int64);
+        parameters.Add("Limit", limit, DbType.Int32);
+
+        return await DatabaseHandler.Connection.QueryAsync<Comment?>(sql, parameters);
+    }
+
 
     public async Task<Comment?> GetCommentById(long commentId)
     {
@@ -147,6 +171,7 @@ public interface ICommentRepository
     Task<long> Insert(long postId, long userId, string content);
     Task Delete(long commentId);
     Task<IEnumerable<Comment?>> GetCommentsByPostId(long postId);
+    Task<IEnumerable<Comment?>> GetCommentsByPostIdPaginated(long postId, int pageSize, DateTime? cursorCreatedAt, long? cursorId);
     Task<Comment?> GetCommentById(long commentId);
     Task<bool> IsLikedByUser(long commentId, long userId);
     Task<long> GetLikesById(long commentId);

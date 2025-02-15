@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using NewPoint.Common.Handlers;
 using NewPoint.Common.Models;
 
@@ -50,6 +51,8 @@ public class ArticleCommentRepository : IArticleCommentRepository
 
     public async Task<IEnumerable<ArticleComment?>> GetCommentsByArticleIdPaginated(long articleId, int pageSize, DateTime? cursorCreatedAt, long? cursorId)
     {
+        var limit = pageSize + 1;
+
         var sql = @$"
         SELECT *
         FROM {TableName}
@@ -57,18 +60,18 @@ public class ArticleCommentRepository : IArticleCommentRepository
         AND (@CursorCreatedAt IS NULL OR creation_timestamp < @CursorCreatedAt OR 
             (creation_timestamp = @CursorCreatedAt AND id < @CursorId))
         ORDER BY creation_timestamp DESC, id DESC
-        LIMIT @PageSize + 1;";
+        LIMIT @Limit;";
 
-        var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(sql, new
-        {
-            ArticleId = articleId,
-            CursorCreatedAt = cursorCreatedAt,
-            CursorId = cursorId ?? long.MaxValue,
-            PageSize = pageSize
-        });
+        var parameters = new DynamicParameters();
+        parameters.Add("ArticleId", articleId, DbType.Int64);
+        parameters.Add("CursorCreatedAt", cursorCreatedAt, DbType.DateTime);
+        parameters.Add("CursorId", cursorId ?? long.MaxValue, DbType.Int64);
+        parameters.Add("Limit", limit, DbType.Int32);
 
+        var comments = await DatabaseHandler.Connection.QueryAsync<ArticleComment?>(sql, parameters);
         return comments;
     }
+
 
     public async Task<ArticleComment?> GetCommentById(long commentId)
     {

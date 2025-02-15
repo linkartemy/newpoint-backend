@@ -4,6 +4,7 @@ using NewPoint.Common.Extensions;
 using NewPoint.Common.Handlers;
 using NewPoint.PostAPI.Repositories;
 using NewPoint.PostAPI.Clients;
+using NewPoint.Common.Models;
 
 namespace NewPoint.PostAPI.Services;
 
@@ -34,49 +35,46 @@ public class CommentService : GrpcComment.GrpcCommentBase
     }
 
     public override async Task<GetCommentsByPostIdResponse> GetCommentsByPostId(GetCommentsByPostIdRequest request,
-        ServerCallContext context)
+    ServerCallContext context)
     {
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+        var cursorCreatedAt = request.CursorCreatedAt?.ToDateTime();
+        var cursorId = request.CursorId > 0 ? request.CursorId : (long?)null;
+
         try
         {
-            var comments = (await _commentRepository.GetCommentsByPostId(request.PostId))
-                .OrderByDescending(post => post.CreationTimestamp).Select(
-                    async comment =>
-                    {
-                        var commentAuthor = await _userClient.GetPostUserDataById(comment.UserId, context.RetrieveToken());
-                        if (commentAuthor is null)
-                        {
-                            comment.Login = "Unknown";
-                            comment.Name = "Unknown";
-                            comment.Surname = "";
-                        }
-                        else
-                        {
-                            comment.Login = commentAuthor.Login;
-                            comment.Name = commentAuthor.Name;
-                            comment.Surname = commentAuthor.Surname;
-                        }
+            var comments = await _commentRepository.GetCommentsByPostIdPaginated(
+                request.PostId,
+                pageSize,
+                cursorCreatedAt,
+                cursorId
+            );
 
-                        var user = context.RetrieveUser();
-                        comment.Liked =
-                            await _commentRepository.IsLikedByUser(comment.Id,
-                                user.Id);
+            var commentModels = await Task.WhenAll(comments.Select(async comment =>
+            {
+                var commentAuthor = await _userClient.GetPostUserDataById(comment.UserId, context.RetrieveToken()) ?? new User();
+                comment.Login = commentAuthor.Login;
+                comment.Name = commentAuthor.Name;
+                comment.Surname = commentAuthor.Surname;
 
-                        return new CommentModel
-                        {
-                            Id = comment.Id,
-                            UserId = comment.UserId,
-                            Login = comment.Login,
-                            Name = comment.Name,
-                            Surname = comment.Surname,
-                            Content = comment.Content,
-                            Likes = comment.Likes,
-                            Liked = comment.Liked,
-                            CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
-                        };
-                        ;
-                    }).Select(comment => comment.Result).ToList();
+                var user = context.RetrieveUser();
+                comment.Liked = await _commentRepository.IsLikedByUser(comment.Id, user.Id);
 
-            return new GetCommentsByPostIdResponse { Comments = { comments } };
+                return new CommentModel
+                {
+                    Id = comment.Id,
+                    UserId = comment.UserId,
+                    Login = comment.Login,
+                    Name = comment.Name,
+                    Surname = comment.Surname,
+                    Content = comment.Content,
+                    Likes = comment.Likes,
+                    Liked = comment.Liked,
+                    CreationTimestamp = DateTimeHandler.DateTimeToTimestamp(comment.CreationTimestamp)
+                };
+            }));
+
+            return new GetCommentsByPostIdResponse { Comments = { commentModels } };
         }
         catch (Exception)
         {
@@ -84,6 +82,7 @@ public class CommentService : GrpcComment.GrpcCommentBase
                 message: CommentServiceErrorMessages.GenericError);
         }
     }
+
 
     public override async Task<AddCommentResponse> AddComment(AddCommentRequest request, ServerCallContext context)
     {
